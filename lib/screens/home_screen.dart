@@ -46,9 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Reload',
-            onPressed: appState.currentAddress != null && !appState.isLoading
-                ? appState.reload
-                : null,
+            onPressed: appState.canReload ? appState.reload : null,
           ),
           Consumer<AppState>(
             builder: (context, state, child) {
@@ -71,7 +69,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Consumer<AppState>(
             builder: (context, state, child) {
               final url = state.currentAddress?.toUrl();
-              if (url == null) return const SizedBox.shrink();
+              if (url == null || state.currentAddress!.isLocalQuestion) {
+                return const SizedBox.shrink();
+              }
 
               return FutureBuilder<bool>(
                 future: state.isBookmarked(url),
@@ -196,7 +196,72 @@ class BrowserTab extends StatelessWidget {
           child: Consumer<AppState>(
             builder: (context, state, child) {
               if (state.isLoading) {
-                return const Center(child: CircularProgressIndicator());
+                final partial = state.partialMenu;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      // No animation once lines are showing: on an old
+                      // computer it would take processor time from the model.
+                      child: partial == null
+                          ? const Center(child: CircularProgressIndicator())
+                          : MenuView(
+                              key: ValueKey(state.pageId),
+                              items: partial,
+                              follow: true,
+                            ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: OutlinedButton.icon(
+                          onPressed: state.cancelLoading,
+                          icon: const Icon(Icons.close),
+                          label: const Text('Cancel'),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              if (state.error != null && state.partialMenu != null) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: MenuView(
+                        key: ValueKey(state.pageId),
+                        items: state.partialMenu!,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: SelectableText(state.error!)),
+                          const SizedBox(width: 8),
+                          if (state.canRetry)
+                            OutlinedButton(
+                              onPressed: state.retry,
+                              child: const Text('Retry'),
+                            ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: state.clearError,
+                            child: const Text('Dismiss'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
               }
 
               if (state.error != null) {
@@ -239,7 +304,19 @@ class BrowserTab extends StatelessWidget {
               }
 
               if (state.currentMenu != null) {
-                return MenuView(items: state.currentMenu!);
+                // Same tree as while it was arriving, so the scroll position
+                // survives the last line.
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: MenuView(
+                        key: ValueKey(state.pageId),
+                        items: state.currentMenu!,
+                      ),
+                    ),
+                  ],
+                );
               }
 
               if (state.currentContent != null) {

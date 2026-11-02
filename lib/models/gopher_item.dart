@@ -198,6 +198,19 @@ class GopherAddress {
 
   String get request => query == null ? selector : '$selector\t$query';
 
+  bool get isLoopback => const {
+    '127.0.0.1',
+    'localhost',
+    '::1',
+    '[::1]',
+  }.contains(host.toLowerCase());
+
+  /// A question put to a server on this computer, which may be a language
+  /// model: slow to answer, and asking it again is not the same as reading it
+  /// again.
+  bool get isLocalQuestion =>
+      type == GopherItemType.search && query != null && isLoopback;
+
   @override
   String toString() => toUrl();
 

@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Show a menu or search reply as it arrives, instead of after the last line.
+- A search on this computer, which may be a language model thinking, can stay silent for up to 15 minutes instead of failing after 30 seconds. Everything else keeps the 30-second limit.
+- Add a Cancel button while a page loads. It returns to the previous page.
+- The answer to a search on this computer is not asked again by Back, Forward or Reload, and stays out of History and Bookmarks.
+- No progress animation once lines are showing, so it takes no processor time from a local model.
+- A search item on this computer asks for "Your question" and has an Ask button, because it is answered rather than searched.
+- The text of a menu or an answer can be selected and copied.
+- If an answer breaks partway, the lines that arrived stay on screen with the error, Retry and Dismiss. An answer from this computer that ends without its last line now says it stopped instead of looking complete.
+- The app is always dark, with the colors and monospace look of the browser extension's reader.
+
 ## Gopher Reader extension 1.1.1 - 2026-10-23
 
 - Change the default shortcut from Alt+Shift+G to Alt+Shift+0. In Firefox on Linux and Windows, Alt+Shift+letter also triggers page access keys, and Wikipedia and other MediaWiki sites bind G to the Wikidata link, so the old shortcut left the page instead of opening the reader. MediaWiki uses every other letter except A, which Chrome reserves; no digit is used by MediaWiki, Chrome or Firefox. Users can change it in the browser's extension shortcut settings.

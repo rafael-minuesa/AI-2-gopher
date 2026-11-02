@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'services/app_state.dart';
 import 'services/native_companion.dart';
 import 'screens/home_screen.dart';
+import 'theme.dart';
 
 void main(List<String> arguments) {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,21 +41,7 @@ class GopherApp extends StatelessWidget {
       },
       child: MaterialApp(
         title: 'Gopher Client',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-        ),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-        ),
-        themeMode: ThemeMode.system,
+        theme: readerTheme,
         home: const HomeScreen(),
         debugShowCheckedModeBanner: false,
       ),

@@ -7,6 +7,10 @@ import 'storage_service.dart';
 class _Visit {
   final GopherAddress address;
   final String title;
+
+  /// The answer to a local question. Back and Forward show it again rather
+  /// than ask the model a second time.
+  List<GopherItem>? answer;
   _Visit(this.address, this.title);
 }
 
@@ -29,6 +33,7 @@ class AppState extends ChangeNotifier {
   GopherAddress? _currentAddress;
   String? _currentTitle;
   List<GopherItem>? _currentMenu;
+  List<GopherItem>? _partialMenu;
   String? _currentContent;
   bool _isLoading = false;
   String? _error;
@@ -47,6 +52,13 @@ class AppState extends ChangeNotifier {
   GopherAddress? get currentAddress => _currentAddress;
   String? get currentTitle => _currentTitle;
   List<GopherItem>? get currentMenu => _currentMenu;
+
+  /// What has arrived so far of the page being loaded.
+  List<GopherItem>? get partialMenu => _partialMenu;
+
+  /// Changes with every load, so a page starts at its own scroll position
+  /// and keeps it from its first lines to its last.
+  int get pageId => _requestId;
   String? get currentContent => _currentContent;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -56,6 +68,12 @@ class AppState extends ChangeNotifier {
   bool get canGoForward =>
       !_isLoading && _navigationIndex < _navigationHistory.length - 1;
   bool get canRetry => _retryVisit != null;
+
+  /// Reloading the answer to a local question would ask the model again.
+  bool get canReload =>
+      _currentAddress != null &&
+      !_isLoading &&
+      !_currentAddress!.isLocalQuestion;
   List<Bookmark> get bookmarks => List.unmodifiable(_bookmarks);
   List<HistoryEntry> get history => List.unmodifiable(_history);
 
@@ -102,6 +120,7 @@ class AppState extends ChangeNotifier {
     _requestId++;
     _request?.cancel();
     _isLoading = false;
+    _partialMenu = null;
     _retryVisit = null;
     _error = message;
     _selectedTab = 0;
@@ -118,6 +137,7 @@ class AppState extends ChangeNotifier {
     _retryIndex = historyIndex;
     _selectedTab = 0;
     _isLoading = true;
+    _partialMenu = null;
     _error = null;
     _notify();
     try {
@@ -141,14 +161,25 @@ class AppState extends ChangeNotifier {
       String? content;
       switch (address.type) {
         case GopherItemType.directory:
-          menu = await _client.fetchMenu(address, request: request);
+          menu = await _client.fetchMenu(
+            address,
+            request: request,
+            onPartial: (soFar) => _showPartial(id, soFar),
+          );
         case GopherItemType.search:
           if (address.query == null || address.query!.trim().isEmpty) {
             throw GopherException(
               'Choose a search item in a menu and enter a query, or use a /7selector%09query URL',
             );
           }
-          menu = await _client.fetchMenu(address, request: request);
+          menu =
+              visit.answer ??
+              await _client.fetchMenu(
+                address,
+                request: request,
+                onPartial: (soFar) => _showPartial(id, soFar),
+              );
+          if (address.isLocalQuestion) visit.answer = menu;
         case GopherItemType.file:
         case GopherItemType.html:
           content = await _client.fetchText(address, request: request);
@@ -171,10 +202,14 @@ class AppState extends ChangeNotifier {
       _currentAddress = address;
       _currentTitle = visit.title;
       _currentMenu = menu;
+      _partialMenu = null;
       _currentContent = content;
       _isLoading = false;
       _retryVisit = null;
       _notify();
+      // A question to this computer stays out of the saved history, which
+      // would ask it again when opened.
+      if (address.isLocalQuestion) return;
       // A persistence error must not hide the successfully loaded page.
       await _withStorage(() async {
         await _storage.addToHistory(
@@ -185,9 +220,27 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       if (id != _requestId || _disposed) return;
       _error = e is GopherException ? e.message : 'Could not load the page: $e';
+      // What already arrived stays on screen, above the error.
       _isLoading = false;
       _notify();
     }
+  }
+
+  void _showPartial(int id, List<GopherItem> soFar) {
+    if (id != _requestId || _disposed) return;
+    _partialMenu = soFar;
+    _notify();
+  }
+
+  /// Stops the page being loaded and goes back to showing the one before it.
+  void cancelLoading() {
+    if (!_isLoading) return;
+    _requestId++;
+    _request?.cancel();
+    _isLoading = false;
+    _partialMenu = null;
+    _retryVisit = null;
+    _notify();
   }
 
   Future<void> navigateToItem(GopherItem item) =>
@@ -227,7 +280,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> reload() async {
-    if (_navigationIndex >= 0 && !_isLoading) {
+    if (_navigationIndex >= 0 && canReload) {
       await _load(
         _navigationHistory[_navigationIndex],
         historyIndex: _navigationIndex,
@@ -285,6 +338,7 @@ class AppState extends ChangeNotifier {
 
   void clearError() {
     _error = null;
+    _partialMenu = null;
     _notify();
   }
 
