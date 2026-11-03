@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gopher_flutter_client/models/gopher_item.dart';
+import 'package:ai_2_gopher/models/gopher_item.dart';
 
 void main() {
   test('root addresses, typed selectors and default ports', () {

@@ -1,9 +1,9 @@
 // Standalone Dart AOT executable: no Flutter runtime or interpreter required.
 import 'dart:convert';
 import 'dart:io';
-import 'package:gopher_flutter_client/companion/client.dart';
-import 'package:gopher_flutter_client/companion/protocol.dart';
-import 'package:gopher_flutter_client/companion/server.dart';
+import 'package:ai_2_gopher/companion/client.dart';
+import 'package:ai_2_gopher/companion/protocol.dart';
+import 'package:ai_2_gopher/companion/server.dart';
 
 Future<void> installHosts() async {
   final config =

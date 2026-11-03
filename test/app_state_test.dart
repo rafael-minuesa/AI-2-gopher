@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gopher_flutter_client/models/gopher_item.dart';
-import 'package:gopher_flutter_client/services/app_state.dart';
-import 'package:gopher_flutter_client/services/gopher_client.dart';
-import 'package:gopher_flutter_client/services/storage_service.dart';
+import 'package:ai_2_gopher/models/gopher_item.dart';
+import 'package:ai_2_gopher/services/app_state.dart';
+import 'package:ai_2_gopher/services/gopher_client.dart';
+import 'package:ai_2_gopher/services/storage_service.dart';
 
 class FixtureClient extends GopherClient {
   final visits = <GopherAddress>[];

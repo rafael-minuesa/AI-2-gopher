@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gopher_flutter_client/models/gopher_item.dart';
-import 'package:gopher_flutter_client/screens/home_screen.dart';
-import 'package:gopher_flutter_client/services/app_state.dart';
-import 'package:gopher_flutter_client/services/gopher_client.dart';
-import 'package:gopher_flutter_client/widgets/menu_view.dart';
-import 'package:gopher_flutter_client/widgets/text_view.dart';
+import 'package:ai_2_gopher/models/gopher_item.dart';
+import 'package:ai_2_gopher/screens/home_screen.dart';
+import 'package:ai_2_gopher/services/app_state.dart';
+import 'package:ai_2_gopher/services/gopher_client.dart';
+import 'package:ai_2_gopher/widgets/menu_view.dart';
+import 'package:ai_2_gopher/widgets/text_view.dart';
 
 class ScreenClient extends GopherClient {
   @override

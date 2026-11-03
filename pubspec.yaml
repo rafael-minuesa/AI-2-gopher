@@ -1,4 +1,4 @@
-name: gopher_flutter_client
+name: ai_2_gopher
 description: A cross-platform Gopher protocol client built with Flutter
 publish_to: 'none'
 version: 1.1.1+4

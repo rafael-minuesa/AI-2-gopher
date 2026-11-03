@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gopher_flutter_client/companion/client.dart';
-import 'package:gopher_flutter_client/companion/library.dart';
-import 'package:gopher_flutter_client/companion/protocol.dart';
-import 'package:gopher_flutter_client/companion/server.dart';
-import 'package:gopher_flutter_client/models/gopher_item.dart';
-import 'package:gopher_flutter_client/services/gopher_client.dart';
+import 'package:ai_2_gopher/companion/client.dart';
+import 'package:ai_2_gopher/companion/library.dart';
+import 'package:ai_2_gopher/companion/protocol.dart';
+import 'package:ai_2_gopher/companion/server.dart';
+import 'package:ai_2_gopher/models/gopher_item.dart';
+import 'package:ai_2_gopher/services/gopher_client.dart';
 
 const firstId = '11111111-1111-4111-8111-111111111111';
 const secondId = '22222222-2222-4222-8222-222222222222';
