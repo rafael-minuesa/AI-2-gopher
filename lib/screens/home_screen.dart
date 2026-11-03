@@ -10,6 +10,7 @@ import 'history_screen.dart';
 import 'web_landing_page.dart';
 import 'web_library_screen.dart';
 import '../services/native_companion.dart';
+import '../l10n/l10n.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -36,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (NativeCompanion.supported)
             IconButton(
               icon: const Icon(Icons.library_books_outlined),
-              tooltip: 'Saved web pages',
+              tooltip: t.savedWebPages,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => const WebLibraryScreen(),
@@ -45,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Reload',
+            tooltip: t.reload,
             onPressed: appState.canReload ? appState.reload : null,
           ),
           Consumer<AppState>(
@@ -53,7 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: state.canGoBack ? () => state.goBack() : null,
-                tooltip: 'Back',
+                tooltip: t.back,
               );
             },
           ),
@@ -62,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
               return IconButton(
                 icon: const Icon(Icons.arrow_forward),
                 onPressed: state.canGoForward ? () => state.goForward() : null,
-                tooltip: 'Forward',
+                tooltip: t.forward,
               );
             },
           ),
@@ -82,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                     ),
                     onPressed: () => _toggleBookmark(context, state, url),
-                    tooltip: isBookmarked ? 'Remove bookmark' : 'Add bookmark',
+                    tooltip: isBookmarked ? t.removeBookmark : t.addBookmark,
                   );
                 },
               );
@@ -97,10 +98,19 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: appState.selectedTab,
         onDestinationSelected: appState.selectTab,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.public), label: 'Browse'),
-          NavigationDestination(icon: Icon(Icons.bookmark), label: 'Bookmarks'),
-          NavigationDestination(icon: Icon(Icons.history), label: 'History'),
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.public),
+            label: t.browse,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.bookmark),
+            label: t.bookmarks,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.history),
+            label: t.history,
+          ),
         ],
       ),
     );
@@ -119,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (removed && context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Bookmark removed')));
+        ).showSnackBar(SnackBar(content: Text(t.bookmarkRemoved)));
       }
     } else {
       await _showBookmarkDialog(context, state, url);
@@ -136,24 +146,24 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Bookmark'),
+        title: Text(t.addBookmarkTitle),
         content: TextFormField(
           initialValue: title,
           onChanged: (value) => title = value,
-          decoration: const InputDecoration(
-            labelText: 'Title',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: t.titleLabel,
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, title),
-            child: const Text('Add'),
+            child: Text(t.add),
           ),
         ],
       ),
@@ -164,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (saved && context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Bookmark added')));
+        ).showSnackBar(SnackBar(content: Text(t.bookmarkAdded)));
       }
     }
   }
@@ -184,10 +194,7 @@ class BrowserTab extends StatelessWidget {
             return MaterialBanner(
               content: Text(state.storageWarning!),
               actions: [
-                TextButton(
-                  onPressed: state.init,
-                  child: const Text('Try again'),
-                ),
+                TextButton(onPressed: state.init, child: Text(t.tryAgain)),
               ],
             );
           },
@@ -218,7 +225,7 @@ class BrowserTab extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: state.cancelLoading,
                           icon: const Icon(Icons.close),
-                          label: const Text('Cancel'),
+                          label: Text(t.cancel),
                         ),
                       ),
                     ),
@@ -250,12 +257,12 @@ class BrowserTab extends StatelessWidget {
                           if (state.canRetry)
                             OutlinedButton(
                               onPressed: state.retry,
-                              child: const Text('Retry'),
+                              child: Text(t.retry),
                             ),
                           const SizedBox(width: 8),
                           OutlinedButton(
                             onPressed: state.clearError,
-                            child: const Text('Dismiss'),
+                            child: Text(t.dismiss),
                           ),
                         ],
                       ),
@@ -278,7 +285,7 @@ class BrowserTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Error',
+                          t.errorHeading,
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 8),
@@ -291,11 +298,11 @@ class BrowserTab extends StatelessWidget {
                         if (state.canRetry)
                           ElevatedButton(
                             onPressed: state.retry,
-                            child: const Text('Retry'),
+                            child: Text(t.retry),
                           ),
                         ElevatedButton(
                           onPressed: state.clearError,
-                          child: const Text('Dismiss'),
+                          child: Text(t.dismiss),
                         ),
                       ],
                     ),
@@ -323,8 +330,8 @@ class BrowserTab extends StatelessWidget {
                 return TextView(
                   content: state.currentContent!,
                   title: state.currentAddress?.type.code == 'h'
-                      ? 'HTML source'
-                      : (state.currentTitle ?? 'Text Document'),
+                      ? t.htmlSource
+                      : (state.currentTitle ?? t.textDocument),
                 );
               }
 
@@ -339,18 +346,15 @@ class BrowserTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Welcome to Gopher',
+                      t.welcome,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Enter a gopher:// URL above to start browsing',
-                      textAlign: TextAlign.center,
-                    ),
+                    Text(t.enterUrlToStart, textAlign: TextAlign.center),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Example servers:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      t.exampleServers,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     const _ExampleLink('gopher://gopher.floodgap.com'),

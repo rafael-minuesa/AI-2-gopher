@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../l10n/l10n.dart';
 
 class AddressBar extends StatefulWidget {
   const AddressBar({super.key});
@@ -48,7 +49,7 @@ class _AddressBarState extends State<AddressBar> {
                   controller: _controller,
                   focusNode: _focusNode,
                   decoration: InputDecoration(
-                    hintText: 'Enter gopher:// URL',
+                    hintText: t.enterUrl,
                     prefixIcon: const Icon(Icons.public),
                     suffixIcon: _controller.text.isNotEmpty
                         ? IconButton(
@@ -82,7 +83,7 @@ class _AddressBarState extends State<AddressBar> {
                     ? () => _navigate(context, _controller.text)
                     : null,
                 icon: const Icon(Icons.arrow_forward),
-                label: const Text('Go'),
+                label: Text(t.go),
               ),
             ],
           );

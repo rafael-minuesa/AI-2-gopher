@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/storage_service.dart';
+import '../l10n/l10n.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
@@ -22,14 +23,11 @@ class HistoryScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No history yet',
+                  t.noHistory,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Your browsing history will appear here',
-                  textAlign: TextAlign.center,
-                ),
+                Text(t.historyWillAppear, textAlign: TextAlign.center),
               ],
             ),
           );
@@ -45,7 +43,7 @@ class HistoryScreen extends StatelessWidget {
                   TextButton.icon(
                     onPressed: () => _confirmClearHistory(context, state),
                     icon: const Icon(Icons.delete_sweep),
-                    label: const Text('Clear History'),
+                    label: Text(t.clearHistory),
                   ),
                 ],
               ),
@@ -72,16 +70,16 @@ class HistoryScreen extends StatelessWidget {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Clear History'),
-        content: const Text('Remove all browsing history?'),
+        title: Text(t.clearHistory),
+        content: Text(t.removeAllHistory),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Clear'),
+            child: Text(t.clear),
           ),
         ],
       ),
@@ -92,7 +90,7 @@ class HistoryScreen extends StatelessWidget {
       if (cleared && context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('History cleared')));
+        ).showSnackBar(SnackBar(content: Text(t.historyCleared)));
       }
     }
   }
@@ -113,7 +111,7 @@ class _HistoryItem extends StatelessWidget {
         children: [
           Text(entry.url, style: Theme.of(context).textTheme.bodySmall),
           Text(
-            _formatTimestamp(entry.timestamp),
+            _formatTimestamp(context, entry.timestamp),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.outline,
             ),
@@ -127,20 +125,20 @@ class _HistoryItem extends StatelessWidget {
     );
   }
 
-  String _formatTimestamp(DateTime timestamp) {
+  String _formatTimestamp(BuildContext context, DateTime timestamp) {
     final now = DateTime.now();
     final diff = now.difference(timestamp);
 
     if (diff.inMinutes < 1) {
-      return 'Just now';
+      return t.justNow;
     } else if (diff.inHours < 1) {
-      return '${diff.inMinutes} minute${diff.inMinutes == 1 ? '' : 's'} ago';
+      return t.minutesAgo(diff.inMinutes);
     } else if (diff.inDays < 1) {
-      return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
+      return t.hoursAgo(diff.inHours);
     } else if (diff.inDays < 7) {
-      return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
+      return t.daysAgo(diff.inDays);
     } else {
-      return '${timestamp.month}/${timestamp.day}/${timestamp.year}';
+      return MaterialLocalizations.of(context).formatShortDate(timestamp);
     }
   }
 }

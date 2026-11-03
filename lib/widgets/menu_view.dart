@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/gopher_item.dart';
 import '../services/app_state.dart';
+import '../l10n/l10n.dart';
 
 class MenuView extends StatefulWidget {
   final List<GopherItem> items;
@@ -181,7 +182,7 @@ class _MenuItemTile extends StatelessWidget {
         content: TextFormField(
           onChanged: (value) => query = value,
           decoration: InputDecoration(
-            labelText: asking ? 'Your question' : 'Search query',
+            labelText: asking ? t.yourQuestion : t.searchQuery,
             border: const OutlineInputBorder(),
             prefixIcon: Icon(asking ? Icons.question_answer : Icons.search),
           ),
@@ -191,11 +192,11 @@ class _MenuItemTile extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, query),
-            child: Text(asking ? 'Ask' : 'Search'),
+            child: Text(asking ? t.ask : t.search),
           ),
         ],
       ),

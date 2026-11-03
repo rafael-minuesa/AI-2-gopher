@@ -6,6 +6,7 @@ import 'services/app_state.dart';
 import 'services/native_companion.dart';
 import 'screens/home_screen.dart';
 import 'theme.dart';
+import 'l10n/l10n.dart';
 
 void main(List<String> arguments) {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +43,9 @@ class GopherApp extends StatelessWidget {
       child: MaterialApp(
         title: 'AI-2 Gopher',
         theme: readerTheme,
+        locale: appLocale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: const HomeScreen(),
         debugShowCheckedModeBanner: false,
       ),

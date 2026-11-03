@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/gopher_item.dart';
 import 'gopher_client.dart';
 import 'storage_service.dart';
+import '../l10n/l10n.dart';
 
 class _Visit {
   final GopherAddress address;
@@ -99,8 +100,7 @@ class AppState extends ChangeNotifier {
       await action();
       _storageWarning = _storage.warning;
     } catch (_) {
-      _storageWarning =
-          'Saved data is unavailable. Browsing still works; try again later.';
+      _storageWarning = t.storageUnavailable;
     }
     _notify();
   }
@@ -110,7 +110,7 @@ class AppState extends ChangeNotifier {
       final address = GopherAddress.fromUrl(url);
       await _load(_Visit(address, title ?? address.toUrl()));
     } on ArgumentError catch (e) {
-      _invalidAddress(e.message.toString());
+      _invalidAddress(localizedAddressError(e.message.toString()));
     } on FormatException catch (e) {
       _invalidAddress(e.message);
     }
@@ -146,10 +146,10 @@ class AppState extends ChangeNotifier {
           address.selector.startsWith('URL:')) {
         final uri = Uri.parse(address.selector.substring(4));
         if (!['http', 'https'].contains(uri.scheme) || uri.host.isEmpty) {
-          throw GopherException('Only HTTP and HTTPS web links can be opened');
+          throw GopherException(t.onlyWebLinks);
         }
         if (!await _openUrl(uri)) {
-          throw GopherException('Could not open the web browser');
+          throw GopherException(t.couldNotOpenBrowser);
         }
         if (id != _requestId || _disposed) return;
         _isLoading = false;
@@ -168,9 +168,7 @@ class AppState extends ChangeNotifier {
           );
         case GopherItemType.search:
           if (address.query == null || address.query!.trim().isEmpty) {
-            throw GopherException(
-              'Choose a search item in a menu and enter a query, or use a /7selector%09query URL',
-            );
+            throw GopherException(t.chooseSearchItem);
           }
           menu =
               visit.answer ??
@@ -184,7 +182,7 @@ class AppState extends ChangeNotifier {
         case GopherItemType.html:
           content = await _client.fetchText(address, request: request);
         default:
-          throw GopherException('This item type is not supported for reading');
+          throw GopherException(t.itemTypeNotSupported);
       }
       if (id != _requestId || _disposed) return;
       if (historyIndex == null) {
@@ -219,7 +217,7 @@ class AppState extends ChangeNotifier {
       });
     } catch (e) {
       if (id != _requestId || _disposed) return;
-      _error = e is GopherException ? e.message : 'Could not load the page: $e';
+      _error = e is GopherException ? e.message : t.couldNotLoadPage('$e');
       // What already arrived stays on screen, above the error.
       _isLoading = false;
       _notify();
@@ -261,7 +259,7 @@ class AppState extends ChangeNotifier {
         title: '${item.displayText}: ${query.trim()}',
       );
     } on ArgumentError catch (e) {
-      _invalidAddress(e.message.toString());
+      _invalidAddress(localizedAddressError(e.message.toString()));
     }
   }
 

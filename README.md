@@ -41,6 +41,15 @@ gopher://example.org/7search%09two%20words    search selector search, query two 
 
 Selectors are opaque; the app does not guess parent directories. An explicit port is supported, including local servers. Gopher is a plain TCP protocol. Text responses use UTF-8, with Latin-1 fallback for legacy bytes; this fallback does not detect other legacy character sets.
 
+## Translations
+
+The app follows your computer's language, and shows English for anything not translated yet. It speaks English, Spanish and German so far, and adding a language takes one file and no tools. See [TRANSLATING.md](TRANSLATING.md).
+
+| Language | Code | Translators |
+|---|---|---|
+| Español | `es` | [Rafael Minuesa](https://github.com/rafael-minuesa) |
+| Deutsch | `de` | [ProWoos team](https://github.com/ProWoos-Devs) |
+
 ## Develop and test
 
 Use Flutter **3.32.7**, the version recorded in `.flutter-version`, and its bundled Dart 3.8.1. The application's resolved dependencies are committed in `pubspec.lock`. Native platform build tools are also required; `flutter doctor` describes missing prerequisites.

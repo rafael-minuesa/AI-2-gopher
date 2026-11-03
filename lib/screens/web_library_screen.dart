@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/native_companion.dart';
 import '../companion/client.dart';
+import '../l10n/l10n.dart';
 
 class WebLibraryScreen extends StatefulWidget {
   final CompanionClient? client;
@@ -54,16 +55,16 @@ class _WebLibraryScreenState extends State<WebLibraryScreen> {
     final remove = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove saved copy?'),
+        title: Text(t.removeSavedCopyQuestion),
         content: Text(page['title'] as String),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Remove'),
+            child: Text(t.remove),
           ),
         ],
       ),
@@ -86,13 +87,9 @@ class _WebLibraryScreenState extends State<WebLibraryScreen> {
       await _client.request({'action': 'stop'});
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Local Gopher serving stopped. Saved copies are kept.',
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(t.servingStopped)));
       }
     } catch (error) {
       if (mounted) {
@@ -106,16 +103,16 @@ class _WebLibraryScreenState extends State<WebLibraryScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Saved web pages'),
+      title: Text(t.savedWebPages),
       actions: [
         IconButton(
           onPressed: _loading ? null : _load,
           icon: const Icon(Icons.refresh),
-          tooltip: 'Refresh library',
+          tooltip: t.refreshLibrary,
         ),
         TextButton(
           onPressed: _loading || _error != null ? null : _stop,
-          child: const Text('Stop serving'),
+          child: Text(t.stopServing),
         ),
       ],
     ),
@@ -123,11 +120,9 @@ class _WebLibraryScreenState extends State<WebLibraryScreen> {
         ? const Center(child: CircularProgressIndicator())
         : Column(
             children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Copies sent from Gopher Reader are saved on this computer and served at 127.0.0.1:7070. Opening this library starts local serving.',
-                ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(t.libraryIntro),
               ),
               if (_error != null)
                 Padding(
@@ -135,13 +130,11 @@ class _WebLibraryScreenState extends State<WebLibraryScreen> {
                   child: SelectableText(_error!),
                 ),
               if (_error != null)
-                TextButton(onPressed: _load, child: const Text('Try again')),
+                TextButton(onPressed: _load, child: Text(t.tryAgain)),
               if (_pages.isEmpty && _error == null)
-                const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Text(
-                    'Open a page in Gopher Reader and choose Open in Gopher app. Article, full-page text, and links are saved together.',
-                  ),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(t.libraryEmpty),
                 ),
               Expanded(
                 child: ListView.builder(
@@ -165,7 +158,7 @@ class _WebLibraryScreenState extends State<WebLibraryScreen> {
                             },
                       trailing: IconButton(
                         icon: const Icon(Icons.delete_outline),
-                        tooltip: 'Remove saved copy',
+                        tooltip: t.removeSavedCopy,
                         onPressed: () => _remove(page),
                       ),
                     );

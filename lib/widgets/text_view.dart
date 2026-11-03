@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../l10n/l10n.dart';
 
 class TextView extends StatefulWidget {
   final String content;
-  final String title;
+  final String? title;
 
-  const TextView({
-    super.key,
-    required this.content,
-    this.title = 'Text Document',
-  });
+  const TextView({super.key, required this.content, this.title});
 
   @override
   State<TextView> createState() => _TextViewState();
@@ -38,16 +35,19 @@ class _TextViewState extends State<TextView> {
             child: Row(
               children: [
                 Expanded(
-                  child: Text(widget.title, overflow: TextOverflow.ellipsis),
+                  child: Text(
+                    widget.title ?? t.textDocument,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.copy),
-                  tooltip: 'Copy to clipboard',
+                  tooltip: t.copyToClipboard,
                   onPressed: () => _copyToClipboard(context),
                 ),
                 IconButton(
                   icon: const Icon(Icons.wrap_text),
-                  tooltip: _wrap ? 'Disable word wrap' : 'Enable word wrap',
+                  tooltip: _wrap ? t.disableWordWrap : t.enableWordWrap,
                   isSelected: _wrap,
                   onPressed: () => setState(() => _wrap = !_wrap),
                 ),
@@ -74,9 +74,9 @@ class _TextViewState extends State<TextView> {
     await Clipboard.setData(ClipboardData(text: widget.content));
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Copied to clipboard'),
-          duration: Duration(seconds: 2),
+        SnackBar(
+          content: Text(t.copiedToClipboard),
+          duration: const Duration(seconds: 2),
         ),
       );
     }

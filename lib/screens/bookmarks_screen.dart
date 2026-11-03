@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../services/storage_service.dart';
+import '../l10n/l10n.dart';
 
 class BookmarksScreen extends StatelessWidget {
   const BookmarksScreen({super.key});
@@ -22,14 +23,11 @@ class BookmarksScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'No bookmarks yet',
+                  t.noBookmarks,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Bookmark your favorite Gopher sites',
-                  textAlign: TextAlign.center,
-                ),
+                Text(t.bookmarkFavorites, textAlign: TextAlign.center),
               ],
             ),
           );
@@ -75,16 +73,16 @@ class _BookmarkItem extends StatelessWidget {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Bookmark'),
-        content: Text('Remove "${bookmark.title}" from bookmarks?'),
+        title: Text(t.deleteBookmark),
+        content: Text(t.removeFromBookmarks(bookmark.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: Text(t.delete),
           ),
         ],
       ),
@@ -97,7 +95,7 @@ class _BookmarkItem extends StatelessWidget {
       if (removed && context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Bookmark removed')));
+        ).showSnackBar(SnackBar(content: Text(t.bookmarkRemoved)));
       }
     }
   }

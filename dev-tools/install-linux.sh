@@ -38,6 +38,8 @@ cat > "$data_home/applications/org.gopherclient.gopher_flutter_client.desktop" <
 Type=Application
 Name=AI-2 Gopher
 Comment=Read Gopher menus and text documents
+Comment[es]=Lee menús y documentos de texto de Gopher
+Comment[de]=Gopher-Menüs und Textdokumente lesen
 Exec="$executable" %u
 Terminal=false
 Categories=Network;

@@ -1,0 +1,158 @@
+{
+  "@@locale": "en",
+  "savedWebPages": "Saved web pages",
+  "reload": "Reload",
+  "back": "Back",
+  "forward": "Forward",
+  "addBookmark": "Add bookmark",
+  "removeBookmark": "Remove bookmark",
+  "browse": "Browse",
+  "bookmarks": "Bookmarks",
+  "history": "History",
+  "bookmarkAdded": "Bookmark added",
+  "bookmarkRemoved": "Bookmark removed",
+  "addBookmarkTitle": "Add Bookmark",
+  "titleLabel": "Title",
+  "add": "Add",
+  "noBookmarks": "No bookmarks yet",
+  "bookmarkFavorites": "Bookmark your favorite Gopher sites",
+  "deleteBookmark": "Delete Bookmark",
+  "removeFromBookmarks": "Remove \"{title}\" from bookmarks?",
+  "@removeFromBookmarks": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "delete": "Delete",
+  "noHistory": "No history yet",
+  "historyWillAppear": "Your browsing history will appear here",
+  "clearHistory": "Clear History",
+  "removeAllHistory": "Remove all browsing history?",
+  "clear": "Clear",
+  "historyCleared": "History cleared",
+  "justNow": "Just now",
+  "minutesAgo": "{count, plural, =1{1 minute ago} other{{count} minutes ago}}",
+  "@minutesAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{count, plural, =1{1 hour ago} other{{count} hours ago}}",
+  "@hoursAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{count, plural, =1{1 day ago} other{{count} days ago}}",
+  "@daysAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "enterUrl": "Enter gopher:// URL",
+  "go": "Go",
+  "cancel": "Cancel",
+  "tryAgain": "Try again",
+  "retry": "Retry",
+  "dismiss": "Dismiss",
+  "errorHeading": "Error",
+  "htmlSource": "HTML source",
+  "textDocument": "Text Document",
+  "welcome": "Welcome to Gopher",
+  "enterUrlToStart": "Enter a gopher:// URL above to start browsing",
+  "exampleServers": "Example servers:",
+  "yourQuestion": "Your question",
+  "searchQuery": "Search query",
+  "ask": "Ask",
+  "search": "Search",
+  "copyToClipboard": "Copy to clipboard",
+  "copiedToClipboard": "Copied to clipboard",
+  "disableWordWrap": "Disable word wrap",
+  "enableWordWrap": "Enable word wrap",
+  "removeSavedCopyQuestion": "Remove saved copy?",
+  "removeSavedCopy": "Remove saved copy",
+  "remove": "Remove",
+  "servingStopped": "Local Gopher serving stopped. Saved copies are kept.",
+  "refreshLibrary": "Refresh library",
+  "stopServing": "Stop serving",
+  "libraryIntro": "Copies sent from Gopher Reader are saved on this computer and served at 127.0.0.1:7070. Opening this library starts local serving.",
+  "libraryEmpty": "Open a page in Gopher Reader and choose Open in Gopher app. Article, full-page text, and links are saved together.",
+  "@libraryEmpty": {
+    "description": "Open in Gopher app is a button in the browser extension, which is in English. Keep those words in English."
+  },
+  "storageUnavailable": "Saved data is unavailable. Browsing still works; try again later.",
+  "someEntriesUnreadable": "Some saved entries could not be read. The original data was kept for recovery.",
+  "onlyWebLinks": "Only HTTP and HTTPS web links can be opened",
+  "couldNotOpenBrowser": "Could not open the web browser",
+  "chooseSearchItem": "Choose a search item in a menu and enter a query, or use a /7selector%09query URL",
+  "@chooseSearchItem": {
+    "description": "/7selector%09query is an address format. Keep it as it is."
+  },
+  "itemTypeNotSupported": "This item type is not supported for reading",
+  "couldNotLoadPage": "Could not load the page: {detail}",
+  "@couldNotLoadPage": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "requestCancelled": "Request cancelled",
+  "responseTooLarge": "Response exceeds the size limit",
+  "answerStopped": "The answer stopped before it finished",
+  "connectionFailed": "Connection failed: {detail}",
+  "@connectionFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "connectionTimedOut": "Connection timed out",
+  "couldNotReadResponse": "Could not read the response: {detail}",
+  "@couldNotReadResponse": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidHost": "Enter a valid Gopher host",
+  "invalidPort": "Port must be between 1 and 65535",
+  "noTabsOrNewlines": "Selectors and queries cannot contain tabs or newlines",
+  "queryOnlyOnSearch": "Only search addresses can contain a query",
+  "mustStartWithGopher": "Invalid Gopher URL: must start with gopher://",
+  "encodeSelector": "Encode selector characters such as ? and # in the URL",
+  "unknownItemType": "Unknown Gopher item type",
+  "gopherPlusUnsupported": "Gopher+ requests are not supported",
+  "webTagline": "A modern, cross-platform Gopher protocol client",
+  "webLimitationTitle": "Web Version Limitation",
+  "webLimitationBody": "The Gopher protocol requires raw TCP socket connections, which web browsers do not support for security reasons.",
+  "webLimitationDownload": "To browse Gopher servers, please download the desktop or mobile version.",
+  "downloadNow": "Download Now",
+  "features": "Features",
+  "featureFastTitle": "Fast & Lightweight",
+  "featureFastBody": "Native performance on all platforms",
+  "featureBookmarksTitle": "Bookmarks & History",
+  "featureBookmarksBody": "Save your favorite Gopher sites",
+  "featureGopherTitle": "Core Gopher Support",
+  "featureGopherBody": "Browse directories, files, and search servers",
+  "featureDarkTitle": "Dark Mode",
+  "featureDarkBody": "Beautiful UI with dark mode support",
+  "couldNotOpenUrl": "Could not open {url}",
+  "@couldNotOpenUrl": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  }
+}

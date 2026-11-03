@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import '../models/gopher_item.dart';
+import '../l10n/l10n.dart';
 
 class GopherException implements Exception {
   final String message;
@@ -20,7 +21,7 @@ class GopherRequest {
   void attach(Socket socket) {
     if (_cancelled) {
       socket.destroy();
-      throw GopherException('Request cancelled');
+      throw GopherException(t.requestCancelled);
     }
     _socket = socket;
   }
@@ -31,7 +32,7 @@ class GopherRequest {
   }
 
   void check() {
-    if (_cancelled) throw GopherException('Request cancelled');
+    if (_cancelled) throw GopherException(t.requestCancelled);
   }
 }
 
@@ -81,7 +82,7 @@ class GopherClient {
         await for (final chunk in input) {
           request.check();
           if (bytes.length + chunk.length > maxResponseBytes) {
-            throw GopherException('Response exceeds the size limit');
+            throw GopherException(t.responseTooLarge);
           }
           if (framed) {
             // A standalone period may be split across TCP chunks.
@@ -108,19 +109,19 @@ class GopherClient {
         // Old servers may leave out the last line, but this is a model that was
         // answering, and it always writes it unless it was stopped.
         if (framed && question) {
-          throw GopherException('The answer stopped before it finished');
+          throw GopherException(t.answerStopped);
         }
         return bytes.takeBytes();
       })();
       return await (question ? reading : reading.timeout(remaining));
     } on SocketException catch (e) {
-      throw GopherException('Connection failed: ${e.message}');
+      throw GopherException(t.connectionFailed(e.message));
     } on TimeoutException {
-      throw GopherException('Connection timed out');
+      throw GopherException(t.connectionTimedOut);
     } on GopherException {
       rethrow;
     } catch (e) {
-      throw GopherException('Could not read the response: $e');
+      throw GopherException(t.couldNotReadResponse('$e'));
     } finally {
       socket?.destroy();
     }
