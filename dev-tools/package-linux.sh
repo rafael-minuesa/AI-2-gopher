@@ -16,7 +16,7 @@ esac
 bundle="build/linux/$flutter_arch/release/bundle"
 staging="$(mktemp -d)"
 trap 'rm -rf "$staging"' EXIT
-package="gopher-client-$version-linux-$arch"
+package="ai-2-gopher-$version-linux-$arch"
 mkdir -p "$staging/$package" dist
 cp -a "$bundle" "$staging/$package/bundle"
 cp build/gopher_reader_companion "$staging/$package/bundle/"

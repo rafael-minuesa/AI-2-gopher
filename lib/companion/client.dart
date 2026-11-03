@@ -85,7 +85,7 @@ class CompanionClient {
     }
     if (!await File(executable).exists()) {
       throw const FileSystemException(
-        'Install the Linux Gopher Client package to enable saved web pages',
+        'Install the Linux AI-2 Gopher package to enable saved web pages',
       );
     }
     await privateDirectory(paths.root);

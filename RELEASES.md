@@ -2,17 +2,17 @@
 
 Current installation instructions, tested platform support, and SDK requirements are in [README.md](README.md). Linux releases include a user installer. Other platform release builds still require validation and signing before distribution.
 
-This document explains how to create and publish releases for the Gopher Flutter Client.
+This document explains how to create and publish releases for the AI-2 Gopher.
 
 ## Publishing a Release
 
 Releases ship the Linux package that was tested, not a fresh rebuild. Tag pushes do not trigger a build.
 
-1. Push the release commit. The "Check and package Linux" workflow uploads `gopher-client-<version>-linux-x86_64.tar.gz` and its `.sha256` as build artifacts.
+1. Push the release commit. The "Check and package Linux" workflow uploads `ai-2-gopher-<version>-linux-x86_64.tar.gz` and its `.sha256` as build artifacts.
 2. Test that package, for example with [TESTING.md](TESTING.md).
 3. Create a draft release on that commit with the tested files, then publish it:
    ```bash
-   gh release create v<version> --draft --target <commit> gopher-client-<version>-linux-x86_64.tar.gz gopher-client-<version>-linux-x86_64.tar.gz.sha256
+   gh release create v<version> --draft --target <commit> ai-2-gopher-<version>-linux-x86_64.tar.gz ai-2-gopher-<version>-linux-x86_64.tar.gz.sha256
    ```
    Publishing creates the tag.
 
@@ -56,7 +56,7 @@ flutter build apk --release
 
 **Automated via GitHub Actions:**
 - Builds on Windows runner
-- Output: `gopher-flutter-client-windows-x64.zip`
+- Output: `ai-2-gopher-windows-x64.zip`
 
 **Manual build:**
 ```bash
@@ -77,12 +77,12 @@ flutter build windows --release
 
 **Automated via GitHub Actions:**
 - Builds on macOS runner
-- Output: `gopher-flutter-client-macos.zip`
+- Output: `ai-2-gopher-macos.zip`
 
 **Manual build:**
 ```bash
 flutter build macos --release
-# Output: build/macos/Build/Products/Release/Gopher Client.app
+# Output: build/macos/Build/Products/Release/AI-2 Gopher.app
 ```
 
 **Distribution:**
@@ -98,12 +98,12 @@ flutter build macos --release
 
 **Automated via GitHub Actions:**
 - Builds on Ubuntu runner
-- Output: `gopher-client-<version>-linux-x86_64.tar.gz`
+- Output: `ai-2-gopher-<version>-linux-x86_64.tar.gz`
 
 **Manual build:**
 ```bash
 dev-tools/package-linux.sh
-# Output: dist/gopher-client-<version>-linux-x86_64.tar.gz, including the native companion
+# Output: dist/ai-2-gopher-<version>-linux-x86_64.tar.gz, including the native companion
 ```
 
 **Distribution:**
@@ -181,7 +181,7 @@ Before creating a release:
 
 You can view download statistics for your releases:
 - Go to Insights → Traffic → Releases
-- Or use GitHub API: `https://api.github.com/repos/rafael-minuesa/gopher-flutter-client/releases`
+- Or use GitHub API: `https://api.github.com/repos/rafael-minuesa/AI-2-gopher/releases`
 
 ## Troubleshooting
 
@@ -214,6 +214,6 @@ You can view download statistics for your releases:
 ## Support
 
 For issues with releases:
-1. Check the [GitHub Actions logs](https://github.com/rafael-minuesa/gopher-flutter-client/actions)
+1. Check the [GitHub Actions logs](https://github.com/rafael-minuesa/AI-2-gopher/actions)
 2. Review Flutter documentation
 3. Open an issue on GitHub

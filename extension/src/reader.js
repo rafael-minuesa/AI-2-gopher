@@ -258,10 +258,10 @@
     status("Exported this view as plain text.");
   });
   $("native-open").addEventListener("click", async () => {
-    $("native-open").disabled = true; clearError(); status("Saving this copy in Gopher Client…");
+    $("native-open").disabled = true; clearError(); status("Saving this copy in AI-2 Gopher…");
     try {
       const result = await request("native.open", {id});
-      status(`Saved locally and opened in Gopher Client: ${result.url}. Manage copies in the app's Saved web pages library.`);
+      status(`Saved locally and opened in AI-2 Gopher: ${result.url}. Manage copies in the app's Saved web pages library.`);
     } catch (failure) { error(failure.message); }
     finally { $("native-open").disabled = false; }
   });

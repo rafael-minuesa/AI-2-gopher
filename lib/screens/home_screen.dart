@@ -23,14 +23,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     if (kIsWeb) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Gopher Client')),
+        appBar: AppBar(title: const Text('AI-2 Gopher')),
         body: const WebLandingPage(),
       );
     }
     final appState = context.watch<AppState>();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gopher Client'),
+        title: const Text('AI-2 Gopher'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           if (NativeCompanion.supported)

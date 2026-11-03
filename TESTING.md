@@ -9,8 +9,8 @@ Allow 20 minutes. Full integration needs **Linux x86-64 with a GTK 3 desktop**, 
 Extract `gopher-test-kit-1.1.0-linux-x86_64.zip`: app **1.1.0+3**, extension **1.1.0**, guide and checksums. Packages come from successful GitHub checks for commit `12d340d`. Open a terminal there:
 
 ```bash
-tar -xzf gopher-client-1.1.0+3-linux-x86_64.tar.gz
-cd gopher-client-1.1.0+3-linux-x86_64
+tar -xzf ai-2-gopher-<version>-linux-x86_64.tar.gz
+cd ai-2-gopher-<version>-linux-x86_64
 ./install.sh
 ```
 

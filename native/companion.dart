@@ -120,7 +120,7 @@ Future<void> main(List<String> args) async {
         // Validate and commit the page before launching the GUI.
         response = await client.request(message, start: true);
         final app = File(
-          '${File(Platform.resolvedExecutable).parent.path}/gopher_flutter_client',
+          '${File(Platform.resolvedExecutable).parent.path}/ai-2-gopher',
         );
         if (!await app.exists()) {
           throw const FileSystemException(

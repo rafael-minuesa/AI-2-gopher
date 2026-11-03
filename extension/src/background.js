@@ -90,7 +90,7 @@
               page: GopherDocument.plainText(doc, "page"), links: doc.links}
           });
         } catch {
-          throw new Error("Could not connect to Gopher Client. Install the Linux app package and run its install.sh to enable browser integration. Sandboxed browser packages may need additional native messaging setup.");
+          throw new Error("Could not connect to AI-2 Gopher. Install the Linux app package and run its install.sh to enable browser integration. Sandboxed browser packages may need additional native messaging setup.");
         }
         if (!response?.ok) throw new Error(response?.error || "The native app could not save this page. Try again.");
         if (typeof response.url !== "string" || !/^gopher:\/\/127\.0\.0\.1:7070\/1\/page\/[a-f0-9-]{36}$/.test(response.url)) {

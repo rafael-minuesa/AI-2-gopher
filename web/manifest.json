@@ -1,6 +1,6 @@
 {
-    "name": "Gopher Flutter Client",
-    "short_name": "Gopher Client",
+    "name": "AI-2 Gopher",
+    "short_name": "AI-2 Gopher",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

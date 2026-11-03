@@ -23,7 +23,7 @@ class WebLandingPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Gopher Client',
+                'AI-2 Gopher',
                 style: Theme.of(context).textTheme.displaySmall,
                 textAlign: TextAlign.center,
               ),
@@ -104,25 +104,25 @@ class WebLandingPage extends StatelessWidget {
                           icon: Icons.desktop_windows,
                           label: 'Windows',
                           url:
-                              'https://github.com/rafael-minuesa/gopher-flutter-client/releases',
+                              'https://github.com/rafael-minuesa/AI-2-gopher/releases',
                         ),
                         _DownloadButton(
                           icon: Icons.apple,
                           label: 'macOS',
                           url:
-                              'https://github.com/rafael-minuesa/gopher-flutter-client/releases',
+                              'https://github.com/rafael-minuesa/AI-2-gopher/releases',
                         ),
                         _DownloadButton(
                           icon: Icons.laptop,
                           label: 'Linux',
                           url:
-                              'https://github.com/rafael-minuesa/gopher-flutter-client/releases',
+                              'https://github.com/rafael-minuesa/AI-2-gopher/releases',
                         ),
                         _DownloadButton(
                           icon: Icons.android,
                           label: 'Android',
                           url:
-                              'https://github.com/rafael-minuesa/gopher-flutter-client/releases',
+                              'https://github.com/rafael-minuesa/AI-2-gopher/releases',
                         ),
                       ],
                     ),

@@ -1,4 +1,4 @@
-# Gopher Flutter Client
+# AI-2 Gopher
 
 A native Gopher browser with a consistent text interface, typed menus and documents, search, bookmarks, and browsing history.
 
@@ -12,13 +12,13 @@ Testing on another computer? Use the [quick test guide](TESTING.md) for setup, e
 
 The first validated build target is Linux x86-64. The package contains the application, Flutter runtime libraries, and assets; Flutter is not needed to run it. A graphical Linux desktop with GTK 3 is required. Builds use Flutter 3.32.7; portable compatibility across Linux distributions still needs validation.
 
-Download `gopher-client-<version>-linux-x86_64.tar.gz` from the [latest release](https://github.com/rafael-minuesa/gopher-flutter-client/releases/latest), extract it, and either run `bundle/gopher_flutter_client` directly or run:
+Download `ai-2-gopher-<version>-linux-x86_64.tar.gz` from the [latest release](https://github.com/rafael-minuesa/AI-2-gopher/releases/latest), extract it, and either run `bundle/ai-2-gopher` directly or run:
 
 ```bash
 ./install.sh
 ```
 
-The installer copies the complete bundle into your user data directory, adds Gopher Client to the application menu, registers browser native messaging, and registers `gopher://` links when `xdg-mime` is available. It does not require administrator access. Use `./install.sh --no-register` to keep your existing default Gopher handler; browser integration still installs. Applications install under `${XDG_DATA_HOME:-$HOME/.local/share}/gopher-client/<version>`.
+The installer copies the complete bundle into your user data directory, adds AI-2 Gopher to the application menu, registers browser native messaging, and registers `gopher://` links when `xdg-mime` is available. It does not require administrator access. Use `./install.sh --no-register` to keep your existing default Gopher handler; browser integration still installs. Applications install under `${XDG_DATA_HOME:-$HOME/.local/share}/ai-2-gopher/<version>`.
 
 Install the extension, convert a page, and choose **Open in Gopher app**. The app opens a local Gopher menu containing article text, full-page text, the original source, and numbered links. Other saved destinations stay in Gopher; unsaved web destinations open in the browser. This saves a snapshot of the loaded page, including content you can currently access, without fetching the site again. It does not automatically convert linked websites.
 
@@ -46,8 +46,8 @@ Selectors are opaque; the app does not guess parent directories. An explicit por
 Use Flutter **3.32.7**, the version recorded in `.flutter-version`, and its bundled Dart 3.8.1. The application's resolved dependencies are committed in `pubspec.lock`. Native platform build tools are also required; `flutter doctor` describes missing prerequisites.
 
 ```bash
-git clone https://github.com/rafael-minuesa/gopher-flutter-client.git
-cd gopher-flutter-client
+git clone https://github.com/rafael-minuesa/AI-2-gopher.git
+cd AI-2-gopher
 flutter pub get --enforce-lockfile
 flutter analyze
 flutter test
@@ -61,7 +61,7 @@ Validated locally on 2026-10-09 with Flutter 3.32.7: 44 protocol, persistence, n
 The app also accepts a Gopher URL as a native command-line argument:
 
 ```bash
-./build/linux/x64/release/bundle/gopher_flutter_client 'gopher://example.org/0/readme.txt'
+./build/linux/x64/release/bundle/ai-2-gopher 'gopher://example.org/0/readme.txt'
 ```
 
 ## Build packages

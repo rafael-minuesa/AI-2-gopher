@@ -40,7 +40,7 @@ class GopherApp extends StatelessWidget {
         return state;
       },
       child: MaterialApp(
-        title: 'Gopher Client',
+        title: 'AI-2 Gopher',
         theme: readerTheme,
         home: const HomeScreen(),
         debugShowCheckedModeBanner: false,

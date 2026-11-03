@@ -11,15 +11,15 @@ export async function prepareNative() {
   if (!process.env.DBUS_SESSION_BUS_ADDRESS) throw new Error('Native tests require dbus-run-session.');
   const root = await mkdtemp(join(tmpdir(), 'gopher-native-browser-'));
   const env = {...process.env, XDG_CONFIG_HOME:join(root,'config space %'),
-    XDG_DATA_HOME:join(root,'data space %'), XDG_RUNTIME_DIR:join(root,'run'),
+    XDG_DATA_HOME:join(root,'data space %'), XDG_BIN_HOME:join(root,'bin space %'), XDG_RUNTIME_DIR:join(root,'run'),
     GOPHER_FIREFOX_HOST_DIR:join(root,'firefox','native-messaging-hosts')};
   await mkdir(env.XDG_RUNTIME_DIR,{mode:0o700});
   execFileSync('tar',['-xzf',process.env.GOPHER_NATIVE_PACKAGE,'-C',root]);
-  const packageName = (await readdir(root)).find(name=>name.startsWith('gopher-client-'));
+  const packageName = (await readdir(root)).find(name=>name.startsWith('ai-2-gopher-'));
   execFileSync('bash',[join(root,packageName,'install.sh'),'--no-register'],{env,stdio:'pipe'});
   const version = (await readFile(join(root,packageName,'VERSION'),'utf8')).trim();
-  const bundle = join(env.XDG_DATA_HOME,'gopher-client',version);
-  return {root,env,bundle,installer:join(root,packageName,'install.sh'),helper:join(bundle,'gopher_reader_companion'),app:join(bundle,'gopher_flutter_client')};
+  const bundle = join(env.XDG_DATA_HOME,'ai-2-gopher',version);
+  return {root,env,bundle,installer:join(root,packageName,'install.sh'),helper:join(bundle,'gopher_reader_companion'),app:join(bundle,'ai-2-gopher')};
 }
 
 export function gopher(selector) {
@@ -63,7 +63,7 @@ export async function verifyNative(native,id,expected='A quieter way to read') {
     }
     return false;
   });
-  const windows=execFileSync('xdotool',['search','--onlyvisible','--name','^Gopher Client$'],{encoding:'utf8'}).trim().split('\n');
+  const windows=execFileSync('xdotool',['search','--onlyvisible','--name','^AI-2 Gopher$'],{encoding:'utf8'}).trim().split('\n');
   assert.equal(windows.length,1,'Handoffs must reuse the same app window');
   if(process.env.GOPHER_NATIVE_SCREENSHOT) {
     execFileSync('import',['-window',windows[0],process.env.GOPHER_NATIVE_SCREENSHOT]);

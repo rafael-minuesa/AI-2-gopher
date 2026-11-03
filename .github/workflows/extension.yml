@@ -43,7 +43,7 @@ jobs:
           export PATH="$RUNNER_TEMP/flutter/bin:$PATH"
           flutter pub get --enforce-lockfile
           dev-tools/package-linux.sh
-          package_file="$GITHUB_WORKSPACE/dist/gopher-client-$(sed -n 's/^version: //p' pubspec.yaml)-linux-$(uname -m).tar.gz"
+          package_file="$GITHUB_WORKSPACE/dist/ai-2-gopher-$(sed -n 's/^version: //p' pubspec.yaml)-linux-$(uname -m).tar.gz"
           echo "GOPHER_NATIVE_PACKAGE=$package_file" >> "$GITHUB_ENV"
       - run: npm ci --ignore-scripts
       - run: npm run build

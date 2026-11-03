@@ -1,6 +1,6 @@
 # Privacy Policy
 
-This policy covers the Gopher Reader browser extension and the Gopher Client desktop app.
+This policy covers the Gopher Reader browser extension and the AI-2 Gopher desktop app.
 
 ## What the extension handles
 
@@ -18,7 +18,7 @@ Form contents are never copied. Images are replaced by their text descriptions.
 
 Nothing is sent over the internet. The extension makes no network requests, has no analytics, and has no accounts.
 
-If you click "Open in Gopher app", the reading copy is sent to the Gopher Client desktop app on the same computer, which saves it in your user folder and serves it on `127.0.0.1:7070`, a local address that is not reachable from your network or the internet. Saved copies stay on your computer until you remove them in the app.
+If you click "Open in Gopher app", the reading copy is sent to the AI-2 Gopher desktop app on the same computer, which saves it in your user folder and serves it on `127.0.0.1:7070`, a local address that is not reachable from your network or the internet. Saved copies stay on your computer until you remove them in the app.
 
 ## Sharing
 
@@ -26,4 +26,4 @@ No data is sold, shared with third parties, or used for any purpose other than s
 
 ## Contact
 
-Questions: https://github.com/rafael-minuesa/gopher-flutter-client/issues
+Questions: https://github.com/rafael-minuesa/AI-2-gopher/issues

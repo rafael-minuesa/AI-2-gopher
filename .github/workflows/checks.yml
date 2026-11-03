@@ -23,5 +23,5 @@ jobs:
       - run: dev-tools/package-linux.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: gopher-client-linux
+          name: ai-2-gopher-linux
           path: dist/*
