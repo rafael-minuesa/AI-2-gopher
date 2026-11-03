@@ -61,7 +61,7 @@ try {
   const handles = await driver.getAllWindowHandles();
   const reading = handles.find(handle=>handle!==original);
   await driver.switchTo().window(reading);
-  await driver.wait(until.elementIsVisible(await driver.findElement(By.id('reading'))),10000);
+  await driver.wait(until.elementIsVisible(await driver.wait(until.elementLocated(By.id('reading')),10000)),10000);
   assert.equal(await driver.findElement(By.id('title')).getText(),'A quieter way to read');
   assert.match(await driver.findElement(By.id('content')).getText(), /Keep the structure/);
   assert.doesNotMatch(await driver.findElement(By.id('content')).getText(),/HIDDEN SECRET|SECRET FORM|SECRET INPUT/);
@@ -77,14 +77,14 @@ try {
     await driver.wait(async()=> (await driver.getAllWindowHandles()).length===3,15000);
     const second=(await driver.getAllWindowHandles()).find(handle=>handle!==original && handle!==reading);
     await driver.switchTo().window(second);
-    await driver.wait(until.elementIsVisible(await driver.findElement(By.id('reading'))),10000);
+    await driver.wait(until.elementIsVisible(await driver.wait(until.elementLocated(By.id('reading')),10000)),10000);
     await driver.findElement(By.id('native-open')).click();
     await driver.wait(async()=> (await driver.findElement(By.id('status')).getText()).includes('Saved locally and opened'),15000);
     await verifyNative(native,new URL(await driver.getCurrentUrl()).searchParams.get('id'));
     await driver.close(); await driver.switchTo().window(reading);
   } else {
     await driver.findElement(By.id('native-open')).click();
-    await driver.wait(until.elementIsVisible(await driver.findElement(By.id('error'))),10000);
+    await driver.wait(until.elementIsVisible(await driver.wait(until.elementLocated(By.id('error')),10000)),10000);
     assert.match(await driver.findElement(By.id('error')).getText(),/Install the Linux app/);
   }
   await driver.findElement(By.css('[data-mode="page"]')).click();
