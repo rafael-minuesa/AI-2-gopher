@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -42,6 +43,31 @@ class StreamingClient extends GopherClient {
   }) {
     partial = onPartial;
     return answer.future;
+  }
+}
+
+class ChatClient extends GopherClient {
+  final List<GopherItem> first;
+  final asked = <GopherAddress>[];
+  Completer<List<GopherItem>>? _answer;
+  void Function(List<GopherItem>)? partial;
+
+  ChatClient(this.first);
+
+  void finish(List<GopherItem> items) => _answer!.complete(items);
+  void fail(Object error) => _answer!.completeError(error);
+
+  @override
+  Future<List<GopherItem>> fetchMenu(
+    GopherAddress address, {
+    GopherRequest? request,
+    void Function(List<GopherItem>)? onPartial,
+  }) {
+    if (address.query == null) return Future.value(first);
+    asked.add(address);
+    partial = onPartial;
+    _answer = Completer<List<GopherItem>>();
+    return _answer!.future;
   }
 }
 
@@ -120,7 +146,7 @@ void main() {
             body: MenuView(
               items: [
                 GopherItem.fromLine(
-                  '7Chat with the AI\t/chat\t127.0.0.1\t7071',
+                  '7Ask First Aid\t/search/first-aid\t127.0.0.1\t7071',
                 ),
               ],
             ),
@@ -128,7 +154,7 @@ void main() {
         ),
       ),
     );
-    await tester.tap(find.text('Chat with the AI'));
+    await tester.tap(find.text('Ask First Aid'));
     await tester.pumpAndSettle();
     expect(find.text('Your question'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Ask'), findsOneWidget);
@@ -160,7 +186,7 @@ void main() {
         child: const MaterialApp(home: HomeScreen()),
       ),
     );
-    unawaited(state.navigate('gopher://127.0.0.1:7070/7/chat%09hello'));
+    unawaited(state.navigate('gopher://127.0.0.1:7070/7/search/x%09hello'));
     await tester.pump();
     expect(find.text('Cancel'), findsOneWidget);
     client.partial!([GopherItem.fromLine('iReading your question')]);
@@ -170,7 +196,7 @@ void main() {
     client.answer.complete([
       GopherItem.fromLine('iReading your question'),
       GopherItem.fromLine('iI am the assistant'),
-      GopherItem.fromLine('7Ask the next question\t/chat/a\t127.0.0.1\t7070'),
+      GopherItem.fromLine('7Ask the next question\t/search/x\t127.0.0.1\t7070'),
     ]);
     await tester.pumpAndSettle();
     expect(find.text('Cancel'), findsNothing);
@@ -198,7 +224,7 @@ void main() {
         child: const MaterialApp(home: HomeScreen()),
       ),
     );
-    unawaited(state.navigate('gopher://127.0.0.1:7070/7/chat%09hello'));
+    unawaited(state.navigate('gopher://127.0.0.1:7070/7/search/x%09hello'));
     await tester.pump();
     final lines = <GopherItem>[];
     for (var i = 0; i < 40; i++) {
@@ -211,12 +237,166 @@ void main() {
     expect(find.text('Line 0'), findsNothing);
     client.answer.complete([
       ...lines,
-      GopherItem.fromLine('7Ask the next question\t/chat/a\t127.0.0.1\t7070'),
+      GopherItem.fromLine('7Ask the next question\t/search/x\t127.0.0.1\t7070'),
     ]);
     await tester.pumpAndSettle();
     expect(find.text('Ask the next question'), findsOneWidget);
     expect(find.text('Line 0'), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+
+  group('the chat page', () {
+    const page = 'gopher://127.0.0.1:7071/7/chat';
+    GopherItem next() =>
+        GopherItem.fromLine('7Ask the next question\t/chat/k\t127.0.0.1\t7071');
+    GopherItem fresh() => GopherItem.fromLine(
+      '7Start a new conversation\t/chat\t127.0.0.1\t7071',
+    );
+
+    Future<ChatClient> open(WidgetTester tester, List<GopherItem> first) async {
+      tester.view.physicalSize = const Size(800, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      SharedPreferences.setMockInitialValues({});
+      final client = ChatClient(first);
+      final state = AppState(client: client);
+      addTearDown(state.dispose);
+      await state.init();
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: state,
+          child: const MaterialApp(home: HomeScreen()),
+        ),
+      );
+      await state.navigate(page);
+      await tester.pumpAndSettle();
+      return client;
+    }
+
+    testWidgets('Enter asks in the conversation, with no popup', (
+      tester,
+    ) async {
+      final client = await open(tester, [
+        GopherItem.fromLine('iType your question.'),
+        GopherItem.fromLine('7Chat with the AI\t/chat\t127.0.0.1\t7071'),
+      ]);
+      expect(find.text('Type your question.'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('Chat with the AI'), findsNothing);
+      expect(find.text('Start a new conversation'), findsNothing);
+
+      await tester.enterText(find.byType(TextField).last, 'hola');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(client.asked.last.selector, '/chat');
+      expect(client.asked.last.query, 'hola');
+      expect(find.text('Cancel'), findsOneWidget);
+      // Nothing blinks away while the model reads.
+      expect(find.text('Type your question.'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      client.partial!([
+        GopherItem.fromLine('i> hola'),
+        GopherItem.fromLine('iProcessing ...\t/chat-status\t(NULL)\t0'),
+      ]);
+      await tester.pump();
+      expect(find.text('Processing .'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Processing ..'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Processing ...'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Processing .'), findsOneWidget);
+      client.partial!([
+        GopherItem.fromLine('i> hola'),
+        GopherItem.fromLine('iProcessing ...\t/chat-status\t(NULL)\t0'),
+        GopherItem.fromLine('iBue'),
+      ]);
+      await tester.pump();
+      expect(find.textContaining('Processing'), findsNothing);
+      client.finish([
+        GopherItem.fromLine('i> hola'),
+        GopherItem.fromLine('iProcessing ...\t/chat-status\t(NULL)\t0'),
+        GopherItem.fromLine('iBuenas'),
+        next(),
+        fresh(),
+      ]);
+      await tester.pumpAndSettle();
+      expect(find.text('> hola'), findsOneWidget);
+      expect(find.text('Buenas'), findsOneWidget);
+      expect(find.textContaining('Processing'), findsNothing);
+      expect(find.text('Ask the next question'), findsNothing);
+      expect(find.text('Start a new conversation'), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField).last, 'y\nahora');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(client.asked.last.selector, '/chat/k');
+      expect(client.asked.last.query, 'y ahora');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Shift+Enter does not send, and an empty box asks nothing', (
+      tester,
+    ) async {
+      final client = await open(tester, [next()]);
+      final asked = client.asked.length;
+      await tester.enterText(find.byType(TextField).last, '   ');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(client.asked.length, asked);
+      await tester.enterText(find.byType(TextField).last, 'hola');
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shift);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shift);
+      await tester.pump();
+      expect(client.asked.length, asked);
+    });
+
+    testWidgets('the page follows the answer until you scroll up', (
+      tester,
+    ) async {
+      final client = await open(tester, [next()]);
+      await tester.enterText(find.byType(TextField).last, 'hola');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      final lines = <GopherItem>[];
+      for (var i = 0; i < 60; i++) {
+        lines.add(GopherItem.fromLine('iLine $i'));
+        client.partial!(List.of(lines));
+        await tester.pump();
+        await tester.pump();
+      }
+      expect(find.text('Line 59'), findsOneWidget);
+      expect(find.text('Line 0'), findsNothing);
+      await tester.drag(find.byType(ListView).last, const Offset(0, 300));
+      await tester.pump();
+      lines.add(GopherItem.fromLine('iLine 60'));
+      client.partial!(List.of(lines));
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Line 60'), findsNothing);
+      client.finish([...lines, next()]);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a failure keeps the conversation and the box', (tester) async {
+      final client = await open(tester, [
+        GopherItem.fromLine('iEarlier answer'),
+        next(),
+      ]);
+      await tester.enterText(find.byType(TextField).last, 'hola');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      client.fail(GopherException('No connection'));
+      await tester.pumpAndSettle();
+      expect(find.text('Earlier answer'), findsOneWidget);
+      expect(find.text('No connection'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+      expect(find.text('Ask'), findsOneWidget);
+    });
   });
 
   testWidgets('a long menu from a server opens at its first line', (

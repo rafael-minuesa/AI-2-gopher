@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0+6 - 2026-11-04
+
+- The AI-2 chat is one page: the whole conversation, with a box for the next question at the bottom instead of a popup. The box grows as you type, Enter sends and Shift+Enter starts a new line. The page follows the answer unless you scroll up to reread. While the model is silent, the dots after its "Processing" line count from one to three.
+- A chat address opens that page directly, and choosing AI-2 Chat again while chatting only brings the window up. Back leaves the chat rather than stepping through its questions.
+
 ## 1.2.0+5 - 2026-11-03
 
 - Show a menu or search reply as it arrives, instead of after the last line.

@@ -79,7 +79,19 @@ class AppState extends ChangeNotifier {
   bool get canReload =>
       _currentAddress != null &&
       !_isLoading &&
-      !_currentAddress!.isLocalQuestion;
+      !_currentAddress!.isLocalQuestion &&
+      !_currentAddress!.isLocalChat;
+
+  /// The page being shown or loaded is the chat.
+  bool get isChat =>
+      (_retryVisit?.address ?? _currentAddress)?.isLocalChat ?? false;
+
+  /// The conversation on the chat page: what has arrived of this answer, or
+  /// else the page before it, so nothing blinks away while the model reads.
+  List<GopherItem> get chatItems =>
+      _partialMenu ??
+      ((_currentAddress?.isLocalChat ?? false) ? _currentMenu : null) ??
+      const [];
   List<Bookmark> get bookmarks => List.unmodifiable(_bookmarks);
   List<HistoryEntry> get history => List.unmodifiable(_history);
 
@@ -132,6 +144,58 @@ class AppState extends ChangeNotifier {
     _notify();
   }
 
+  /// An address from outside the window. Choosing AI-2 Chat while chatting only
+  /// brings the window up: it must not end the conversation or its answer. After
+  /// a failure it loads again, because that is how the server comes back.
+  Future<void> openFromOutside(String url) async {
+    GopherAddress? address;
+    try {
+      address = GopherAddress.fromUrl(url);
+    } on ArgumentError {
+      address = null;
+    } on FormatException {
+      address = null;
+    }
+    if (address != null &&
+        address.isLocalChat &&
+        address.query == null &&
+        isChat &&
+        _error == null) {
+      selectTab(0);
+      return;
+    }
+    await navigate(url);
+  }
+
+  /// The next question of the conversation on the page.
+  Future<void> askChat(String question) async {
+    final page = _retryVisit?.address ?? _currentAddress;
+    if (page == null) return;
+    final next = chatItems
+        .where((i) => i.isSearchItem && i.address.isLocalChat)
+        .fold<GopherItem?>(
+          null,
+          (best, i) => i.selector != '/chat' ? i : best ?? i,
+        );
+    final selector = next?.selector ?? page.selector;
+    try {
+      await _load(
+        _Visit(
+          GopherAddress(
+            host: page.host,
+            port: page.port,
+            selector: selector,
+            type: GopherItemType.search,
+            query: question,
+          ),
+          question,
+        ),
+      );
+    } on ArgumentError catch (e) {
+      _invalidAddress(localizedAddressError(e.message.toString()));
+    }
+  }
+
   Future<void> _load(_Visit visit, {int? historyIndex}) async {
     if (_disposed) return;
     final id = ++_requestId;
@@ -172,7 +236,8 @@ class AppState extends ChangeNotifier {
             onPartial: (soFar) => _showPartial(id, soFar),
           );
         case GopherItemType.search:
-          if (address.query == null || address.query!.trim().isEmpty) {
+          if (!address.isLocalChat &&
+              (address.query == null || address.query!.trim().isEmpty)) {
             throw GopherException(t.chooseSearchItem);
           }
           menu =
@@ -190,7 +255,13 @@ class AppState extends ChangeNotifier {
           throw GopherException(t.itemTypeNotSupported);
       }
       if (id != _requestId || _disposed) return;
-      if (historyIndex == null) {
+      if (historyIndex == null &&
+          address.isLocalChat &&
+          (_currentAddress?.isLocalChat ?? false) &&
+          _navigationIndex >= 0) {
+        // Back leaves the chat, rather than step through its questions.
+        _navigationHistory[_navigationIndex] = visit;
+      } else if (historyIndex == null) {
         if (_navigationIndex < _navigationHistory.length - 1) {
           _navigationHistory.removeRange(
             _navigationIndex + 1,
@@ -212,7 +283,7 @@ class AppState extends ChangeNotifier {
       _notify();
       // A question to this computer stays out of the saved history, which
       // would ask it again when opened.
-      if (address.isLocalQuestion) return;
+      if (address.isLocalQuestion || address.isLocalChat) return;
       // A persistence error must not hide the successfully loaded page.
       await _withStorage(() async {
         await _storage.addToHistory(
@@ -342,6 +413,7 @@ class AppState extends ChangeNotifier {
   void clearError() {
     _error = null;
     _partialMenu = null;
+    _retryVisit = null;
     _notify();
   }
 

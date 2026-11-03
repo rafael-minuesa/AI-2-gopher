@@ -102,7 +102,8 @@ class _MenuItemTile extends StatelessWidget {
       trailing: item.type.isNavigable ? const Icon(Icons.chevron_right) : null,
       onTap: item.type.isNavigable
           ? () {
-              if (item.type == GopherItemType.search) {
+              if (item.type == GopherItemType.search &&
+                  !item.address.isLocalChat) {
                 _showSearchDialog(context, item);
               } else {
                 context.read<AppState>().navigateToItem(item);
