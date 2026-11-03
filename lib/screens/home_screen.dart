@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
 import '../widgets/address_bar.dart';
+import '../widgets/chat_view.dart';
 import '../widgets/menu_view.dart';
 import '../widgets/text_view.dart';
 import 'bookmarks_screen.dart';
@@ -70,7 +71,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Consumer<AppState>(
             builder: (context, state, child) {
               final url = state.currentAddress?.toUrl();
-              if (url == null || state.currentAddress!.isLocalQuestion) {
+              if (url == null ||
+                  state.currentAddress!.isLocalQuestion ||
+                  state.currentAddress!.isLocalChat) {
                 return const SizedBox.shrink();
               }
 
@@ -202,6 +205,8 @@ class BrowserTab extends StatelessWidget {
         Expanded(
           child: Consumer<AppState>(
             builder: (context, state, child) {
+              if (state.isChat) return const ChatView();
+
               if (state.isLoading) {
                 final partial = state.partialMenu;
                 return Column(

@@ -74,6 +74,12 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# Installed as built, so without this the plugin keeps the path of the folder it
+# was built in.
+set_target_properties(url_launcher_linux_plugin PROPERTIES
+  BUILD_WITH_INSTALL_RPATH ON
+  INSTALL_RPATH "$ORIGIN")
+
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build

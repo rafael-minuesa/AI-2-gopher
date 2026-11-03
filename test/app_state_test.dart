@@ -9,6 +9,7 @@ import 'package:ai_2_gopher/services/storage_service.dart';
 class FixtureClient extends GopherClient {
   final visits = <GopherAddress>[];
   final delayed = <String, Completer<List<GopherItem>>>{};
+  final answers = <String, List<GopherItem>>{};
   String? failure;
   void Function(List<GopherItem>)? partial;
 
@@ -24,7 +25,8 @@ class FixtureClient extends GopherClient {
     if (delayed.containsKey(address.selector)) {
       return delayed[address.selector]!.future;
     }
-    return [GopherItem.fromLine('i${address.selector}')];
+    return answers[address.selector] ??
+        [GopherItem.fromLine('i${address.selector}')];
   }
 
   @override
@@ -154,6 +156,68 @@ void main() {
       expect(state.isLoading, isFalse);
     },
   );
+
+  group('the chat', () {
+    const page = 'gopher://127.0.0.1:7071/7/chat';
+
+    test('opens with no question, and stays out of history', () async {
+      await state.navigate(page);
+      expect(state.error, isNull);
+      expect(state.isChat, isTrue);
+      expect(state.canReload, isFalse);
+      expect(state.history, isEmpty);
+    });
+
+    test('its questions are one page: Back leaves the chat', () async {
+      await state.navigate('gopher://example.org/1A');
+      await state.navigate(page);
+      await state.askChat('one');
+      await state.askChat('two');
+      expect(state.currentAddress!.query, 'two');
+      expect(state.currentAddress!.shownUrl, page);
+      await state.goBack();
+      expect(state.currentAddress!.selector, 'A');
+    });
+
+    test('the next question goes to the conversation on the page', () async {
+      client.answers['/chat'] = [
+        GopherItem.fromLine('7Ask the next question\t/chat/k\t127.0.0.1\t7071'),
+        GopherItem.fromLine(
+          '7Start a new conversation\t/chat\t127.0.0.1\t7071',
+        ),
+      ];
+      await state.navigate(page);
+      await state.askChat('one');
+      expect(client.visits.last.selector, '/chat/k');
+      expect(client.visits.last.query, 'one');
+    });
+
+    test('AI-2 Chat chosen while chatting does not disturb it', () async {
+      await state.navigate(page);
+      await state.askChat('one');
+      final asked = client.visits.length;
+      await state.openFromOutside(page);
+      expect(client.visits.length, asked);
+      expect(state.currentAddress!.query, 'one');
+      await state.openFromOutside('gopher://example.org/1A');
+      expect(state.isChat, isFalse);
+    });
+
+    test('AI-2 Chat chosen after a failure loads the page again', () async {
+      client.failure = '/chat';
+      await state.navigate(page);
+      expect(state.error, isNotNull);
+      client.failure = null;
+      await state.openFromOutside(page);
+      expect(state.error, isNull);
+      expect(state.currentAddress!.selector, '/chat');
+    });
+
+    test('other search items on this computer still need a query', () async {
+      await state.navigate('gopher://127.0.0.1:7071/7/search/x');
+      expect(state.error, isNotNull);
+    });
+  });
 
   group('questions to this computer', () {
     const url = 'gopher://127.0.0.1:7070/7/chat%09who%20are%20you';

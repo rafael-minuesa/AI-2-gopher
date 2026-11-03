@@ -60,6 +60,12 @@ class GopherItem {
 
   bool get isNavigable => type.isNavigable;
 
+  bool get isSearchItem => type == GopherItemType.search;
+
+  /// A line about the answer being written, not part of the conversation.
+  bool get isChatStatus =>
+      type == GopherItemType.info && selector == '/chat-status';
+
   /// Parse a Gopher menu line
   /// Format: <type><display text><TAB><selector><TAB><host><TAB><port>
   factory GopherItem.fromLine(String line) {
@@ -210,6 +216,23 @@ class GopherAddress {
   /// again.
   bool get isLocalQuestion =>
       type == GopherItemType.search && query != null && isLoopback;
+
+  /// The AI-2 chat on this computer. It opens with no question, because its
+  /// page has the box for one.
+  bool get isLocalChat =>
+      type == GopherItemType.search &&
+      isLoopback &&
+      (selector == '/chat' || selector.startsWith('/chat/'));
+
+  /// A conversation is one page, whatever was asked in it.
+  String get shownUrl => isLocalChat
+      ? GopherAddress(
+          host: host,
+          port: port,
+          selector: '/chat',
+          type: type,
+        ).toUrl()
+      : toUrl();
 
   @override
   String toString() => toUrl();

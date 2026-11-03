@@ -29,7 +29,7 @@ class GopherApp extends StatelessWidget {
           ).setMethodCallHandler((call) async {
             if (call.method == 'openUrl' && call.arguments is String) {
               state.selectTab(0);
-              await state.navigate(call.arguments as String);
+              await state.openFromOutside(call.arguments as String);
             }
           });
           const MethodChannel(

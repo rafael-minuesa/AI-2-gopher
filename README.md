@@ -2,7 +2,7 @@
 
 A native Gopher browser with a consistent text interface, typed menus and documents, search, bookmarks, and browsing history.
 
-Current native app version: **1.2.0+5**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
+Current native app version: **1.3.0+6**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 **Gopher Reader extension 1.1.1** converts a loaded web page into a local text-and-links view in one click. With the Linux app installed, **Open in Gopher app** saves that copy and delivers it through actual Gopher. See [extension installation and usage](extension/README.md).
 
@@ -100,7 +100,7 @@ The web target preserves the download landing page and GitHub Pages deployment. 
 | --- | --- |
 | Type `1`: menu | Parsed list of typed links and information |
 | Type `0`: text | Selectable document with protocol framing removed |
-| Type `7`: search | Query dialog and navigable results; query preserved in URLs/history |
+| Type `7`: search | Query dialog and navigable results; query preserved in URLs/history. The AI-2 chat on this computer (`/chat`) is one page with a box for the next question, and stays out of history |
 | Type `h`: external `URL:http(s)` link | Opens the system web browser |
 | Type `h`: Gopher-hosted HTML | Displays HTML source as text |
 | Information and error rows | Displayed without navigation |

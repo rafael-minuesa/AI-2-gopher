@@ -38,8 +38,8 @@ class _AddressBarState extends State<AddressBar> {
           // Update text field when address changes from navigation
           if (state.currentAddress != null &&
               !_focusNode.hasFocus &&
-              _controller.text != state.currentAddress!.toUrl()) {
-            _controller.text = state.currentAddress!.toUrl();
+              _controller.text != state.currentAddress!.shownUrl) {
+            _controller.text = state.currentAddress!.shownUrl;
           }
 
           return Row(
