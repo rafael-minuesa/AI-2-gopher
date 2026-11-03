@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import '../models/gopher_item.dart';
+import '../l10n/l10n.dart';
 
 class GopherException implements Exception {
   final String message;
@@ -20,7 +21,7 @@ class GopherRequest {
   void attach(Socket socket) {
     if (_cancelled) {
       socket.destroy();
-      throw GopherException('Request cancelled');
+      throw GopherException(t.requestCancelled);
     }
     _socket = socket;
   }
@@ -31,7 +32,7 @@ class GopherRequest {
   }
 
   void check() {
-    if (_cancelled) throw GopherException('Request cancelled');
+    if (_cancelled) throw GopherException(t.requestCancelled);
   }
 }
 
@@ -40,15 +41,22 @@ class GopherClient {
   final Duration timeout;
   final int maxResponseBytes;
 
+  /// How long a local question may stay silent. Its total time has no limit:
+  /// a model on an old computer can think for minutes, and the person can
+  /// cancel at any moment.
+  final Duration answerSilence;
+
   GopherClient({
     this.timeout = const Duration(seconds: 30),
     this.maxResponseBytes = 8 * 1024 * 1024,
+    this.answerSilence = const Duration(minutes: 15),
   });
 
   Future<List<int>> _read(
     GopherAddress address,
     GopherRequest request, {
     required bool framed,
+    void Function(List<int> chunk)? onChunk,
   }) async {
     Socket? socket;
     final stopwatch = Stopwatch()..start();
@@ -63,16 +71,18 @@ class GopherClient {
       }
       socket.write('${address.request}\r\n');
       final connection = socket;
-      return await (() async {
+      final question = address.isLocalQuestion;
+      final reading = (() async {
         await connection.flush();
         final bytes = BytesBuilder(copy: false);
         var lineStart = true;
         var dot = false;
         var dotCr = false;
-        await for (final chunk in connection) {
+        final input = question ? connection.timeout(answerSilence) : connection;
+        await for (final chunk in input) {
           request.check();
           if (bytes.length + chunk.length > maxResponseBytes) {
-            throw GopherException('Response exceeds the size limit');
+            throw GopherException(t.responseTooLarge);
           }
           if (framed) {
             // A standalone period may be split across TCP chunks.
@@ -93,29 +103,37 @@ class GopherClient {
             }
           }
           bytes.add(chunk);
+          onChunk?.call(chunk);
         }
         request.check();
+        // Old servers may leave out the last line, but this is a model that was
+        // answering, and it always writes it unless it was stopped.
+        if (framed && question) {
+          throw GopherException(t.answerStopped);
+        }
         return bytes.takeBytes();
-      })().timeout(remaining);
+      })();
+      return await (question ? reading : reading.timeout(remaining));
     } on SocketException catch (e) {
-      throw GopherException('Connection failed: ${e.message}');
+      throw GopherException(t.connectionFailed(e.message));
     } on TimeoutException {
-      throw GopherException('Connection timed out');
+      throw GopherException(t.connectionTimedOut);
     } on GopherException {
       rethrow;
     } catch (e) {
-      throw GopherException('Could not read the response: $e');
+      throw GopherException(t.couldNotReadResponse('$e'));
     } finally {
       socket?.destroy();
     }
   }
 
   Future<String> fetch(GopherAddress address, {GopherRequest? request}) async {
-    final bytes = await _read(
-      address,
-      request ?? GopherRequest(),
-      framed: true,
+    return _decode(
+      await _read(address, request ?? GopherRequest(), framed: true),
     );
+  }
+
+  String _decode(List<int> bytes) {
     // UTF-8 first; Latin-1 preserves bytes in older Gopher documents.
     try {
       return utf8.decode(bytes);
@@ -140,10 +158,25 @@ class GopherClient {
     return result.join('\n');
   }
 
+  /// [onPartial] gets every whole menu line so far, as they arrive. The list
+  /// returned at the end is still the authority.
   Future<List<GopherItem>> fetchMenu(
     GopherAddress address, {
     GopherRequest? request,
-  }) async => parseMenu(await fetch(address, request: request));
+    void Function(List<GopherItem> soFar)? onPartial,
+  }) async {
+    final partial = onPartial == null ? null : _PartialMenu(this, onPartial);
+    return parseMenu(
+      _decode(
+        await _read(
+          address,
+          request ?? GopherRequest(),
+          framed: true,
+          onChunk: partial?.add,
+        ),
+      ),
+    );
+  }
 
   List<GopherItem> parseMenu(String content) {
     final items = <GopherItem>[];
@@ -183,4 +216,29 @@ class GopherClient {
     ),
     request: request,
   );
+}
+
+/// Parses whole lines as they arrive. A line split across TCP chunks, or a
+/// character split inside one, waits for the rest.
+class _PartialMenu {
+  final GopherClient _client;
+  final void Function(List<GopherItem>) _onPartial;
+  final _items = <GopherItem>[];
+  var _pending = <int>[];
+
+  _PartialMenu(this._client, this._onPartial);
+
+  void add(List<int> chunk) {
+    final end = chunk.lastIndexOf(10);
+    if (end < 0) {
+      _pending = [..._pending, ...chunk];
+      return;
+    }
+    final whole = [..._pending, ...chunk.sublist(0, end + 1)];
+    _pending = chunk.sublist(end + 1);
+    final fresh = _client.parseMenu(_client._decode(whole));
+    if (fresh.isEmpty) return;
+    _items.addAll(fresh);
+    _onPartial(List.unmodifiable(_items));
+  }
 }

@@ -1,22 +1,25 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gopher_flutter_client/models/gopher_item.dart';
-import 'package:gopher_flutter_client/services/app_state.dart';
-import 'package:gopher_flutter_client/services/gopher_client.dart';
-import 'package:gopher_flutter_client/services/storage_service.dart';
+import 'package:ai_2_gopher/models/gopher_item.dart';
+import 'package:ai_2_gopher/services/app_state.dart';
+import 'package:ai_2_gopher/services/gopher_client.dart';
+import 'package:ai_2_gopher/services/storage_service.dart';
 
 class FixtureClient extends GopherClient {
   final visits = <GopherAddress>[];
   final delayed = <String, Completer<List<GopherItem>>>{};
   String? failure;
+  void Function(List<GopherItem>)? partial;
 
   @override
   Future<List<GopherItem>> fetchMenu(
     GopherAddress address, {
     GopherRequest? request,
+    void Function(List<GopherItem>)? onPartial,
   }) async {
     visits.add(address);
+    partial = onPartial;
     if (failure == address.selector) throw GopherException('Fixture failure');
     if (delayed.containsKey(address.selector)) {
       return delayed[address.selector]!.future;
@@ -151,6 +154,114 @@ void main() {
       expect(state.isLoading, isFalse);
     },
   );
+
+  group('questions to this computer', () {
+    const url = 'gopher://127.0.0.1:7070/7/chat%09who%20are%20you';
+
+    test('lines show while loading and the page commits at the end', () async {
+      final answer = Completer<List<GopherItem>>();
+      client.delayed['/chat'] = answer;
+      final loading = state.navigate(url);
+      await Future<void>.delayed(Duration.zero);
+      client.partial!([GopherItem.fromLine('iReading')]);
+      expect(state.isLoading, isTrue);
+      expect(state.partialMenu!.single.displayText, 'Reading');
+      expect(state.currentAddress, isNull);
+      answer.complete([GopherItem.fromLine('iDone')]);
+      await loading;
+      expect(state.partialMenu, isNull);
+      expect(state.currentMenu!.single.displayText, 'Done');
+    });
+
+    test('a failure keeps what arrived, and Retry asks again', () async {
+      final answer = Completer<List<GopherItem>>();
+      client.delayed['/chat'] = answer;
+      final loading = state.navigate(url);
+      await Future<void>.delayed(Duration.zero);
+      client.partial!([GopherItem.fromLine('iHalf an answer')]);
+      answer.completeError(
+        GopherException('The answer stopped before it finished'),
+      );
+      await loading;
+      expect(state.isLoading, isFalse);
+      expect(state.error, 'The answer stopped before it finished');
+      expect(state.partialMenu!.single.displayText, 'Half an answer');
+      expect(state.canRetry, isTrue);
+      final again = Completer<List<GopherItem>>();
+      client.delayed['/chat'] = again;
+      final retrying = state.retry();
+      await Future<void>.delayed(Duration.zero);
+      expect(state.partialMenu, isNull);
+      again.complete([GopherItem.fromLine('iWhole answer')]);
+      await retrying;
+      expect(state.error, isNull);
+      expect(state.currentMenu!.single.displayText, 'Whole answer');
+    });
+
+    test('Dismiss clears a failed answer', () async {
+      final answer = Completer<List<GopherItem>>();
+      client.delayed['/chat'] = answer;
+      final loading = state.navigate(url);
+      await Future<void>.delayed(Duration.zero);
+      client.partial!([GopherItem.fromLine('iHalf')]);
+      answer.completeError(GopherException('Stopped'));
+      await loading;
+      state.clearError();
+      expect(state.error, isNull);
+      expect(state.partialMenu, isNull);
+    });
+
+    test('Cancel returns to the page before it, with no error', () async {
+      await state.navigate('gopher://example.org/1A');
+      final answer = Completer<List<GopherItem>>();
+      client.delayed['/chat'] = answer;
+      final loading = state.navigate(url);
+      await Future<void>.delayed(Duration.zero);
+      client.partial!([GopherItem.fromLine('iReading')]);
+      state.cancelLoading();
+      expect(state.isLoading, isFalse);
+      expect(state.partialMenu, isNull);
+      expect(state.error, isNull);
+      expect(state.canRetry, isFalse);
+      expect(state.currentAddress!.selector, 'A');
+      answer.complete([GopherItem.fromLine('iLate')]);
+      await loading;
+      expect(state.currentAddress!.selector, 'A');
+      expect(state.currentMenu!.single.displayText, 'A');
+      client.partial!([GopherItem.fromLine('iLater')]);
+      expect(state.partialMenu, isNull);
+    });
+
+    test('Back and Forward show the answer without asking again', () async {
+      await state.navigate(url);
+      await state.navigate('gopher://example.org/1A');
+      final asked = client.visits.length;
+      await state.goBack();
+      expect(state.currentAddress!.isLocalQuestion, isTrue);
+      expect(state.currentMenu!.single.displayText, '/chat');
+      await state.goForward();
+      await state.goBack();
+      expect(client.visits.where((v) => v.selector == '/chat').length, 1);
+      expect(client.visits.length, asked + 1);
+    });
+
+    test('Reload does not ask again and history stays clean', () async {
+      await state.navigate(url);
+      expect(state.canReload, isFalse);
+      await state.reload();
+      expect(client.visits.length, 1);
+      expect(state.history, isEmpty);
+    });
+
+    test('a search on another computer behaves as before', () async {
+      await state.navigate('gopher://example.org/7/s%09x');
+      await state.navigate('gopher://example.org/1A');
+      await state.goBack();
+      expect(client.visits.where((v) => v.selector == '/s').length, 2);
+      expect(state.canReload, isTrue);
+      expect(state.history.length, greaterThan(0));
+    });
+  });
 
   test('storage errors do not prevent reading', () async {
     final unavailable = AppState(client: client, storage: FailingStorage());

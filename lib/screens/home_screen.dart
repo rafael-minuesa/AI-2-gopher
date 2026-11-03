@@ -10,6 +10,7 @@ import 'history_screen.dart';
 import 'web_landing_page.dart';
 import 'web_library_screen.dart';
 import '../services/native_companion.dart';
+import '../l10n/l10n.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -23,20 +24,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     if (kIsWeb) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Gopher Client')),
+        appBar: AppBar(title: const Text('AI-2 Gopher')),
         body: const WebLandingPage(),
       );
     }
     final appState = context.watch<AppState>();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gopher Client'),
+        title: const Text('AI-2 Gopher'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           if (NativeCompanion.supported)
             IconButton(
               icon: const Icon(Icons.library_books_outlined),
-              tooltip: 'Saved web pages',
+              tooltip: t.savedWebPages,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => const WebLibraryScreen(),
@@ -45,17 +46,15 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            tooltip: 'Reload',
-            onPressed: appState.currentAddress != null && !appState.isLoading
-                ? appState.reload
-                : null,
+            tooltip: t.reload,
+            onPressed: appState.canReload ? appState.reload : null,
           ),
           Consumer<AppState>(
             builder: (context, state, child) {
               return IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: state.canGoBack ? () => state.goBack() : null,
-                tooltip: 'Back',
+                tooltip: t.back,
               );
             },
           ),
@@ -64,14 +63,16 @@ class _HomeScreenState extends State<HomeScreen> {
               return IconButton(
                 icon: const Icon(Icons.arrow_forward),
                 onPressed: state.canGoForward ? () => state.goForward() : null,
-                tooltip: 'Forward',
+                tooltip: t.forward,
               );
             },
           ),
           Consumer<AppState>(
             builder: (context, state, child) {
               final url = state.currentAddress?.toUrl();
-              if (url == null) return const SizedBox.shrink();
+              if (url == null || state.currentAddress!.isLocalQuestion) {
+                return const SizedBox.shrink();
+              }
 
               return FutureBuilder<bool>(
                 future: state.isBookmarked(url),
@@ -82,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                     ),
                     onPressed: () => _toggleBookmark(context, state, url),
-                    tooltip: isBookmarked ? 'Remove bookmark' : 'Add bookmark',
+                    tooltip: isBookmarked ? t.removeBookmark : t.addBookmark,
                   );
                 },
               );
@@ -97,10 +98,19 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: appState.selectedTab,
         onDestinationSelected: appState.selectTab,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.public), label: 'Browse'),
-          NavigationDestination(icon: Icon(Icons.bookmark), label: 'Bookmarks'),
-          NavigationDestination(icon: Icon(Icons.history), label: 'History'),
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.public),
+            label: t.browse,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.bookmark),
+            label: t.bookmarks,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.history),
+            label: t.history,
+          ),
         ],
       ),
     );
@@ -119,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (removed && context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Bookmark removed')));
+        ).showSnackBar(SnackBar(content: Text(t.bookmarkRemoved)));
       }
     } else {
       await _showBookmarkDialog(context, state, url);
@@ -136,24 +146,24 @@ class _HomeScreenState extends State<HomeScreen> {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add Bookmark'),
+        title: Text(t.addBookmarkTitle),
         content: TextFormField(
           initialValue: title,
           onChanged: (value) => title = value,
-          decoration: const InputDecoration(
-            labelText: 'Title',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: t.titleLabel,
+            border: const OutlineInputBorder(),
           ),
           autofocus: true,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, title),
-            child: const Text('Add'),
+            child: Text(t.add),
           ),
         ],
       ),
@@ -164,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (saved && context.mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Bookmark added')));
+        ).showSnackBar(SnackBar(content: Text(t.bookmarkAdded)));
       }
     }
   }
@@ -184,10 +194,7 @@ class BrowserTab extends StatelessWidget {
             return MaterialBanner(
               content: Text(state.storageWarning!),
               actions: [
-                TextButton(
-                  onPressed: state.init,
-                  child: const Text('Try again'),
-                ),
+                TextButton(onPressed: state.init, child: Text(t.tryAgain)),
               ],
             );
           },
@@ -196,7 +203,72 @@ class BrowserTab extends StatelessWidget {
           child: Consumer<AppState>(
             builder: (context, state, child) {
               if (state.isLoading) {
-                return const Center(child: CircularProgressIndicator());
+                final partial = state.partialMenu;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      // No animation once lines are showing: on an old
+                      // computer it would take processor time from the model.
+                      child: partial == null
+                          ? const Center(child: CircularProgressIndicator())
+                          : MenuView(
+                              key: ValueKey(state.pageId),
+                              items: partial,
+                              follow: true,
+                            ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: OutlinedButton.icon(
+                          onPressed: state.cancelLoading,
+                          icon: const Icon(Icons.close),
+                          label: Text(t.cancel),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              if (state.error != null && state.partialMenu != null) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: MenuView(
+                        key: ValueKey(state.pageId),
+                        items: state.partialMenu!,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(child: SelectableText(state.error!)),
+                          const SizedBox(width: 8),
+                          if (state.canRetry)
+                            OutlinedButton(
+                              onPressed: state.retry,
+                              child: Text(t.retry),
+                            ),
+                          const SizedBox(width: 8),
+                          OutlinedButton(
+                            onPressed: state.clearError,
+                            child: Text(t.dismiss),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
               }
 
               if (state.error != null) {
@@ -213,7 +285,7 @@ class BrowserTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'Error',
+                          t.errorHeading,
                           style: Theme.of(context).textTheme.headlineSmall,
                         ),
                         const SizedBox(height: 8),
@@ -226,11 +298,11 @@ class BrowserTab extends StatelessWidget {
                         if (state.canRetry)
                           ElevatedButton(
                             onPressed: state.retry,
-                            child: const Text('Retry'),
+                            child: Text(t.retry),
                           ),
                         ElevatedButton(
                           onPressed: state.clearError,
-                          child: const Text('Dismiss'),
+                          child: Text(t.dismiss),
                         ),
                       ],
                     ),
@@ -239,15 +311,27 @@ class BrowserTab extends StatelessWidget {
               }
 
               if (state.currentMenu != null) {
-                return MenuView(items: state.currentMenu!);
+                // Same tree as while it was arriving, so the scroll position
+                // survives the last line.
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: MenuView(
+                        key: ValueKey(state.pageId),
+                        items: state.currentMenu!,
+                      ),
+                    ),
+                  ],
+                );
               }
 
               if (state.currentContent != null) {
                 return TextView(
                   content: state.currentContent!,
                   title: state.currentAddress?.type.code == 'h'
-                      ? 'HTML source'
-                      : (state.currentTitle ?? 'Text Document'),
+                      ? t.htmlSource
+                      : (state.currentTitle ?? t.textDocument),
                 );
               }
 
@@ -262,18 +346,15 @@ class BrowserTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Welcome to Gopher',
+                      t.welcome,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Enter a gopher:// URL above to start browsing',
-                      textAlign: TextAlign.center,
-                    ),
+                    Text(t.enterUrlToStart, textAlign: TextAlign.center),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Example servers:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      t.exampleServers,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     const _ExampleLink('gopher://gopher.floodgap.com'),

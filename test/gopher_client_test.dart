@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gopher_flutter_client/models/gopher_item.dart';
-import 'package:gopher_flutter_client/services/gopher_client.dart';
+import 'package:ai_2_gopher/models/gopher_item.dart';
+import 'package:ai_2_gopher/services/gopher_client.dart';
 
 void main() {
   late ServerSocket server;
@@ -126,6 +126,154 @@ void main() {
         ),
       ),
     );
+  });
+
+  GopherAddress question() => GopherAddress(
+    host: '127.0.0.1',
+    port: server.port,
+    selector: '/chat',
+    type: GopherItemType.search,
+    query: 'who are you',
+  );
+
+  test('menu lines reach the caller as they arrive, split or not', () async {
+    final second = Completer<void>();
+    await serve((socket, request) async {
+      socket.write('iRead');
+      await socket.flush();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      socket.write('ing\r\n');
+      await socket.flush();
+      await second.future;
+      socket.add(utf8.encode('iAdi\u00f3s\r\n'));
+      socket.write('.\r\n');
+      await socket.flush();
+    });
+    final seen = <List<String>>[];
+    final rows = await GopherClient().fetchMenu(
+      question(),
+      onPartial: (soFar) {
+        seen.add(soFar.map((row) => row.displayText).toList());
+        if (!second.isCompleted) second.complete();
+      },
+    );
+    expect(seen.first, ['Reading']);
+    expect(rows.map((row) => row.displayText), ['Reading', 'Adi\u00f3s']);
+  });
+
+  test('a character split across chunks waits for the rest', () async {
+    final bytes = utf8.encode('iAdi\u00f3s\r\n.\r\n');
+    final cut = bytes.indexOf(0xc3) + 1;
+    await serve((socket, request) async {
+      socket.add(bytes.sublist(0, cut));
+      await socket.flush();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      socket.add(bytes.sublist(cut));
+      await socket.flush();
+    });
+    final seen = <String>[];
+    final rows = await GopherClient().fetchMenu(
+      question(),
+      onPartial: (soFar) => seen.add(soFar.last.displayText),
+    );
+    expect(rows.single.displayText, 'Adi\u00f3s');
+    expect(seen, everyElement('Adi\u00f3s'));
+  });
+
+  test('a local question outlasts the deadline while lines arrive', () async {
+    await serve((socket, request) async {
+      for (var i = 0; i < 4; i++) {
+        socket.write('iLine\r\n');
+        await socket.flush();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      }
+      socket.write('.\r\n');
+      await socket.flush();
+    });
+    final rows = await GopherClient(
+      timeout: const Duration(milliseconds: 150),
+      answerSilence: const Duration(seconds: 2),
+    ).fetchMenu(question());
+    expect(rows.length, 4);
+  });
+
+  test('a local question that goes silent still ends', () async {
+    await serve((socket, request) async {
+      socket.write('iReading\r\n');
+      await socket.flush();
+    });
+    await expectLater(
+      GopherClient(
+        answerSilence: const Duration(milliseconds: 150),
+      ).fetchMenu(question()),
+      throwsA(isA<GopherException>()),
+    );
+  });
+
+  test('a question to another computer keeps the deadline', () {
+    expect(question().isLocalQuestion, isTrue);
+    expect(
+      GopherAddress(
+        host: 'gopher.example.org',
+        selector: '/s',
+        type: GopherItemType.search,
+        query: 'x',
+      ).isLocalQuestion,
+      isFalse,
+    );
+    expect(
+      GopherAddress(host: '127.0.0.1', selector: '/menu').isLocalQuestion,
+      isFalse,
+    );
+  });
+
+  test(
+    'an answer cut short says so, and other servers may omit the end',
+    () async {
+      await serve((socket, request) async {
+        socket.write('iHalf an answer\t\t\t0\r\n');
+        await socket.flush();
+        await socket.close();
+      });
+      final port = server.port;
+      await expectLater(
+        GopherClient().fetchMenu(
+          GopherAddress(
+            host: '127.0.0.1',
+            port: port,
+            selector: '/chat',
+            type: GopherItemType.search,
+            query: 'hello',
+          ),
+        ),
+        throwsA(
+          isA<GopherException>().having(
+            (e) => e.message,
+            'message',
+            contains('stopped before it finished'),
+          ),
+        ),
+      );
+      final menu = await GopherClient().fetchMenu(
+        GopherAddress(host: '127.0.0.1', port: port),
+      );
+      expect(menu.single.displayText, 'Half an answer');
+    },
+  );
+
+  test('cancelling a silent question closes it at once', () async {
+    final started = Completer<void>();
+    await serve((socket, request) async {
+      socket.write('iReading\r\n');
+      await socket.flush();
+      started.complete();
+    });
+    final request = GopherRequest();
+    final response = GopherClient().fetchMenu(question(), request: request);
+    final assertion = expectLater(response, throwsA(isA<GopherException>()));
+    await started.future;
+    request.cancel();
+    await assertion.timeout(const Duration(seconds: 2));
   });
 
   test('cancellation closes an in-flight connection', () async {

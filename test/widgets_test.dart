@@ -1,18 +1,21 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:gopher_flutter_client/models/gopher_item.dart';
-import 'package:gopher_flutter_client/screens/home_screen.dart';
-import 'package:gopher_flutter_client/services/app_state.dart';
-import 'package:gopher_flutter_client/services/gopher_client.dart';
-import 'package:gopher_flutter_client/widgets/text_view.dart';
+import 'package:ai_2_gopher/models/gopher_item.dart';
+import 'package:ai_2_gopher/screens/home_screen.dart';
+import 'package:ai_2_gopher/services/app_state.dart';
+import 'package:ai_2_gopher/services/gopher_client.dart';
+import 'package:ai_2_gopher/widgets/menu_view.dart';
+import 'package:ai_2_gopher/widgets/text_view.dart';
 
 class ScreenClient extends GopherClient {
   @override
   Future<List<GopherItem>> fetchMenu(
     GopherAddress address, {
     GopherRequest? request,
+    void Function(List<GopherItem>)? onPartial,
   }) async {
     if (address.query != null) {
       return [GopherItem.fromLine('iResults for ${address.query}')];
@@ -25,6 +28,21 @@ class ScreenClient extends GopherClient {
     GopherAddress address, {
     GopherRequest? request,
   }) async => 'Saved document body';
+}
+
+class StreamingClient extends GopherClient {
+  final answer = Completer<List<GopherItem>>();
+  void Function(List<GopherItem>)? partial;
+
+  @override
+  Future<List<GopherItem>> fetchMenu(
+    GopherAddress address, {
+    GopherRequest? request,
+    void Function(List<GopherItem>)? onPartial,
+  }) {
+    partial = onPartial;
+    return answer.future;
+  }
 }
 
 void main() {
@@ -83,6 +101,121 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Results for some words'), findsOneWidget);
     expect(state.currentAddress!.query, 'some words');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a search item on this computer asks for a question', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final client = ScreenClient();
+    final state = AppState(client: client);
+    addTearDown(state.dispose);
+    await state.init();
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: state,
+        child: MaterialApp(
+          home: Scaffold(
+            body: MenuView(
+              items: [
+                GopherItem.fromLine(
+                  '7Chat with the AI\t/chat\t127.0.0.1\t7071',
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Chat with the AI'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your question'), findsOneWidget);
+    expect(find.widgetWithText(TextButton, 'Ask'), findsOneWidget);
+    expect(find.text('Search query'), findsNothing);
+  });
+
+  testWidgets('the text of a menu can be selected', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MenuView(items: [GopherItem.fromLine('iSome words\t\t\t0')]),
+        ),
+      ),
+    );
+    expect(find.byType(SelectionArea), findsOneWidget);
+  });
+
+  testWidgets('an answer shows as it arrives, with Cancel and no animation', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final client = StreamingClient();
+    final state = AppState(client: client);
+    addTearDown(state.dispose);
+    await state.init();
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: state,
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+    unawaited(state.navigate('gopher://127.0.0.1:7070/7/chat%09hello'));
+    await tester.pump();
+    expect(find.text('Cancel'), findsOneWidget);
+    client.partial!([GopherItem.fromLine('iReading your question')]);
+    await tester.pump();
+    expect(find.text('Reading your question'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    client.answer.complete([
+      GopherItem.fromLine('iReading your question'),
+      GopherItem.fromLine('iI am the assistant'),
+      GopherItem.fromLine('7Ask the next question\t/chat/a\t127.0.0.1\t7070'),
+    ]);
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel'), findsNothing);
+    expect(find.text('I am the assistant'), findsOneWidget);
+    expect(find.text('Ask the next question'), findsOneWidget);
+    expect(find.byTooltip('Add bookmark'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a long answer stays in sight and its end is left showing', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(600, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    final client = StreamingClient();
+    final state = AppState(client: client);
+    addTearDown(state.dispose);
+    await state.init();
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: state,
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+    unawaited(state.navigate('gopher://127.0.0.1:7070/7/chat%09hello'));
+    await tester.pump();
+    final lines = <GopherItem>[];
+    for (var i = 0; i < 40; i++) {
+      lines.add(GopherItem.fromLine('iLine $i'));
+      client.partial!(List.of(lines));
+      await tester.pump();
+      await tester.pump();
+    }
+    expect(find.text('Line 39'), findsOneWidget);
+    expect(find.text('Line 0'), findsNothing);
+    client.answer.complete([
+      ...lines,
+      GopherItem.fromLine('7Ask the next question\t/chat/a\t127.0.0.1\t7070'),
+    ]);
+    await tester.pumpAndSettle();
+    expect(find.text('Ask the next question'), findsOneWidget);
+    expect(find.text('Line 0'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

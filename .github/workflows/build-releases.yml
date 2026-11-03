@@ -99,13 +99,13 @@ jobs:
 
       - name: Create ZIP
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath gopher-flutter-client-windows-x64.zip
+          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath ai-2-gopher-windows-x64.zip
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: windows-x64
-          path: gopher-flutter-client-windows-x64.zip
+          path: ai-2-gopher-windows-x64.zip
 
   build-macos:
     name: Build macOS
@@ -133,13 +133,13 @@ jobs:
       - name: Create ZIP
         run: |
           cd build/macos/Build/Products/Release
-          zip -r ../../../../../gopher-flutter-client-macos.zip "Gopher Client.app"
+          zip -r ../../../../../ai-2-gopher-macos.zip "AI-2 Gopher.app"
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: gopher-flutter-client-macos.zip
+          path: ai-2-gopher-macos.zip
 
   create-release:
     name: Create GitHub Release
@@ -156,10 +156,10 @@ jobs:
         with:
           files: |
             android-apk/app-release.apk
-            linux-x64/gopher-client-*.tar.gz
-            linux-x64/gopher-client-*.tar.gz.sha256
-            windows-x64/gopher-flutter-client-windows-x64.zip
-            macos/gopher-flutter-client-macos.zip
+            linux-x64/ai-2-gopher-*.tar.gz
+            linux-x64/ai-2-gopher-*.tar.gz.sha256
+            windows-x64/ai-2-gopher-windows-x64.zip
+            macos/ai-2-gopher-macos.zip
           draft: false
           prerelease: false
           generate_release_notes: true

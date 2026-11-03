@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n/l10n.dart';
 
 /// Web landing page - simplified UI for web platform
 class WebLandingPage extends StatelessWidget {
@@ -23,13 +24,13 @@ class WebLandingPage extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Gopher Client',
+                'AI-2 Gopher',
                 style: Theme.of(context).textTheme.displaySmall,
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
-                'A modern, cross-platform Gopher protocol client',
+                t.webTagline,
                 style: Theme.of(context).textTheme.titleMedium,
                 textAlign: TextAlign.center,
               ),
@@ -50,7 +51,7 @@ class WebLandingPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Web Version Limitation',
+                      t.webLimitationTitle,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.orange.shade900,
                         fontWeight: FontWeight.bold,
@@ -58,14 +59,13 @@ class WebLandingPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'The Gopher protocol requires raw TCP socket connections, '
-                      'which web browsers do not support for security reasons.',
+                      t.webLimitationBody,
                       style: TextStyle(color: Colors.orange.shade900),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'To browse Gopher servers, please download the desktop or mobile version.',
+                      t.webLimitationDownload,
                       style: TextStyle(
                         color: Colors.orange.shade900,
                         fontWeight: FontWeight.bold,
@@ -91,7 +91,7 @@ class WebLandingPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Download Now',
+                      t.downloadNow,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 16),
@@ -104,25 +104,25 @@ class WebLandingPage extends StatelessWidget {
                           icon: Icons.desktop_windows,
                           label: 'Windows',
                           url:
-                              'https://github.com/rafael-minuesa/gopher-flutter-client/releases',
+                              'https://github.com/rafael-minuesa/AI-2-gopher/releases',
                         ),
                         _DownloadButton(
                           icon: Icons.apple,
                           label: 'macOS',
                           url:
-                              'https://github.com/rafael-minuesa/gopher-flutter-client/releases',
+                              'https://github.com/rafael-minuesa/AI-2-gopher/releases',
                         ),
                         _DownloadButton(
                           icon: Icons.laptop,
                           label: 'Linux',
                           url:
-                              'https://github.com/rafael-minuesa/gopher-flutter-client/releases',
+                              'https://github.com/rafael-minuesa/AI-2-gopher/releases',
                         ),
                         _DownloadButton(
                           icon: Icons.android,
                           label: 'Android',
                           url:
-                              'https://github.com/rafael-minuesa/gopher-flutter-client/releases',
+                              'https://github.com/rafael-minuesa/AI-2-gopher/releases',
                         ),
                       ],
                     ),
@@ -131,29 +131,29 @@ class WebLandingPage extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               Text(
-                'Features',
+                t.features,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 16),
-              const _FeatureItem(
+              _FeatureItem(
                 icon: Icons.speed,
-                title: 'Fast & Lightweight',
-                description: 'Native performance on all platforms',
+                title: t.featureFastTitle,
+                description: t.featureFastBody,
               ),
-              const _FeatureItem(
+              _FeatureItem(
                 icon: Icons.bookmark,
-                title: 'Bookmarks & History',
-                description: 'Save your favorite Gopher sites',
+                title: t.featureBookmarksTitle,
+                description: t.featureBookmarksBody,
               ),
-              const _FeatureItem(
+              _FeatureItem(
                 icon: Icons.search,
-                title: 'Core Gopher Support',
-                description: 'Browse directories, files, and search servers',
+                title: t.featureGopherTitle,
+                description: t.featureGopherBody,
               ),
-              const _FeatureItem(
+              _FeatureItem(
                 icon: Icons.dark_mode,
-                title: 'Dark Mode',
-                description: 'Beautiful UI with dark mode support',
+                title: t.featureDarkTitle,
+                description: t.featureDarkBody,
               ),
             ],
           ),
@@ -185,7 +185,7 @@ class _DownloadButton extends StatelessWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(SnackBar(content: Text('Could not open $url')));
+            ).showSnackBar(SnackBar(content: Text(t.couldNotOpenUrl(url))));
           }
         }
       },

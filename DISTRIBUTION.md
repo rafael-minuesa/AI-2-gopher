@@ -1,4 +1,4 @@
-# Distribution Guide for Gopher Flutter Client
+# Distribution Guide for AI-2 Gopher
 
 Current installation instructions, tested platform support, and SDK requirements are in [README.md](README.md). Linux releases include a user installer. Other platform release builds still require validation and signing before distribution.
 
@@ -47,7 +47,7 @@ git push
 # Go to Settings → Pages → Source: main branch /docs folder
 ```
 
-Your app will be live at: `https://yourusername.github.io/gopher-flutter-client/`
+Your app will be live at: `https://yourusername.github.io/AI-2-gopher/`
 
 ---
 
@@ -63,13 +63,13 @@ flutter build windows --release
 ### macOS
 ```bash
 flutter build macos --release
-# Output: build/macos/Build/Products/Release/Gopher Client.app
+# Output: build/macos/Build/Products/Release/AI-2 Gopher.app
 ```
 
 ### Linux
 ```bash
 dev-tools/package-linux.sh
-# Output: dist/gopher-client-<version>-linux-x86_64.tar.gz
+# Output: dist/ai-2-gopher-<version>-linux-x86_64.tar.gz
 # Includes the compiled companion and user installer; install.sh registers browser integration.
 ```
 

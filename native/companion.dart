@@ -1,9 +1,9 @@
 // Standalone Dart AOT executable: no Flutter runtime or interpreter required.
 import 'dart:convert';
 import 'dart:io';
-import 'package:gopher_flutter_client/companion/client.dart';
-import 'package:gopher_flutter_client/companion/protocol.dart';
-import 'package:gopher_flutter_client/companion/server.dart';
+import 'package:ai_2_gopher/companion/client.dart';
+import 'package:ai_2_gopher/companion/protocol.dart';
+import 'package:ai_2_gopher/companion/server.dart';
 
 Future<void> installHosts() async {
   final config =
@@ -120,7 +120,7 @@ Future<void> main(List<String> args) async {
         // Validate and commit the page before launching the GUI.
         response = await client.request(message, start: true);
         final app = File(
-          '${File(Platform.resolvedExecutable).parent.path}/gopher_flutter_client',
+          '${File(Platform.resolvedExecutable).parent.path}/ai-2-gopher',
         );
         if (!await app.exists()) {
           throw const FileSystemException(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/l10n.dart';
 
 /// Bookmark data model
 class Bookmark {
@@ -106,8 +107,7 @@ class StorageService {
           !await _prefs!.setString(backup, raw)) {
         throw StateError('Could not preserve damaged saved data');
       }
-      warning =
-          'Some saved entries could not be read. The original data was kept for recovery.';
+      warning = t.someEntriesUnreadable;
     }
     return entries;
   }

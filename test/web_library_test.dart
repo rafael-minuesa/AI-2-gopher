@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gopher_flutter_client/companion/client.dart';
-import 'package:gopher_flutter_client/screens/web_library_screen.dart';
+import 'package:ai_2_gopher/companion/client.dart';
+import 'package:ai_2_gopher/screens/web_library_screen.dart';
 
 class LibraryClient extends CompanionClient {
   LibraryClient()

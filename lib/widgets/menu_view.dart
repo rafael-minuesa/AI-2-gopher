@@ -2,20 +2,56 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/gopher_item.dart';
 import '../services/app_state.dart';
+import '../l10n/l10n.dart';
 
-class MenuView extends StatelessWidget {
+class MenuView extends StatefulWidget {
   final List<GopherItem> items;
 
-  const MenuView({super.key, required this.items});
+  /// More lines are on their way; keep the newest in sight.
+  final bool follow;
+
+  const MenuView({super.key, required this.items, this.follow = false});
+
+  @override
+  State<MenuView> createState() => _MenuViewState();
+}
+
+class _MenuViewState extends State<MenuView> {
+  final ScrollController _scroll = ScrollController();
+
+  @override
+  void didUpdateWidget(MenuView old) {
+    super.didUpdateWidget(old);
+    // Whoever scrolled up to reread stays where they are.
+    if (old.follow &&
+        widget.items.length > old.items.length &&
+        _scroll.hasClients &&
+        _scroll.position.extentAfter < 64) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scroll.hasClients) {
+          _scroll.jumpTo(_scroll.position.maxScrollExtent);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        return _MenuItemTile(item: item);
-      },
+    return SelectionArea(
+      child: ListView.builder(
+        controller: _scroll,
+        itemCount: widget.items.length,
+        itemBuilder: (context, index) {
+          final item = widget.items[index];
+          return _MenuItemTile(item: item);
+        },
+      ),
     );
   }
 }
@@ -131,6 +167,13 @@ class _MenuItemTile extends StatelessWidget {
 
   Future<void> _showSearchDialog(BuildContext context, GopherItem item) async {
     var query = '';
+    // A search item on this computer is answered, often by a language model.
+    final asking = GopherAddress(
+      host: item.host,
+      port: item.port,
+      selector: item.selector,
+      type: item.type,
+    ).isLoopback;
 
     final result = await showDialog<String>(
       context: context,
@@ -138,10 +181,10 @@ class _MenuItemTile extends StatelessWidget {
         title: Text(item.displayText),
         content: TextFormField(
           onChanged: (value) => query = value,
-          decoration: const InputDecoration(
-            labelText: 'Search query',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.search),
+          decoration: InputDecoration(
+            labelText: asking ? t.yourQuestion : t.searchQuery,
+            border: const OutlineInputBorder(),
+            prefixIcon: Icon(asking ? Icons.question_answer : Icons.search),
           ),
           autofocus: true,
           onFieldSubmitted: (value) => Navigator.pop(context, value),
@@ -149,11 +192,11 @@ class _MenuItemTile extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: Text(t.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, query),
-            child: const Text('Search'),
+            child: Text(asking ? t.ask : t.search),
           ),
         ],
       ),
