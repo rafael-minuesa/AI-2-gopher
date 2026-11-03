@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.0+5 - 2026-11-03
 
 - Show a menu or search reply as it arrives, instead of after the last line.
 - A search on this computer, which may be a language model thinking, can stay silent for up to 15 minutes instead of failing after 30 seconds. Everything else keeps the 30-second limit.
