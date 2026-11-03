@@ -70,6 +70,11 @@ class AppState extends ChangeNotifier {
       !_isLoading && _navigationIndex < _navigationHistory.length - 1;
   bool get canRetry => _retryVisit != null;
 
+  /// An answer being written on this computer is read as it grows. A menu
+  /// from a server is read from the top.
+  bool get isAskingLocally =>
+      _isLoading && (_retryVisit?.address.isLocalQuestion ?? false);
+
   /// Reloading the answer to a local question would ask the model again.
   bool get canReload =>
       _currentAddress != null &&

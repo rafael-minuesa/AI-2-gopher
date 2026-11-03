@@ -219,6 +219,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('a long menu from a server opens at its first line', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(600, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    SharedPreferences.setMockInitialValues({});
+    final client = StreamingClient();
+    final state = AppState(client: client);
+    addTearDown(state.dispose);
+    await state.init();
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: state,
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+    unawaited(state.navigate('gopher://example.org/1/'));
+    await tester.pump();
+    final lines = <GopherItem>[];
+    for (var i = 0; i < 40; i++) {
+      lines.add(GopherItem.fromLine('iLine $i'));
+      client.partial!(List.of(lines));
+      await tester.pump();
+      await tester.pump();
+    }
+    expect(find.text('Line 0'), findsOneWidget);
+    expect(find.text('Line 39'), findsNothing);
+    client.answer.complete(lines);
+    await tester.pumpAndSettle();
+    expect(find.text('Line 0'), findsOneWidget);
+    expect(find.text('Line 39'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('opening a bookmark switches to Browse and shows text', (
     tester,
   ) async {

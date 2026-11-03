@@ -58,5 +58,9 @@ if [[ -e "$bin_home/ai-2-gopher" && ! -L "$bin_home/ai-2-gopher" ]]; then
   printf 'Left %s as it is; the app is at %s\n' "$bin_home/ai-2-gopher" "$app_dir/ai-2-gopher"
 else
   ln -sfn "$app_dir/ai-2-gopher" "$bin_home/ai-2-gopher"
+  case ":${PATH:-}:" in
+    *":$bin_home:"*) ;;
+    *) printf 'To run ai-2-gopher by name, add %s to your PATH. The application menu works without it.\n' "$bin_home" ;;
+  esac
 fi
 printf 'Installed AI-2 Gopher in %s\n' "$app_dir"

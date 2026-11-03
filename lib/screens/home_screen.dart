@@ -215,7 +215,7 @@ class BrowserTab extends StatelessWidget {
                           : MenuView(
                               key: ValueKey(state.pageId),
                               items: partial,
-                              follow: true,
+                              follow: state.isAskingLocally,
                             ),
                     ),
                     Padding(

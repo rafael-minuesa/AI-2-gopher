@@ -11,7 +11,7 @@
 - The text of a menu or an answer can be selected and copied.
 - If an answer breaks partway, the lines that arrived stay on screen with the error, Retry and Dismiss. An answer from this computer that ends without its last line now says it stopped instead of looking complete.
 - The app is always dark, with the colors and monospace look of the browser extension's reader.
-- The app is now AI-2 Gopher. The command is `ai-2-gopher`, the installer adds it to `~/.local/bin`, and the repository is AI-2-gopher. Bookmarks and history carry over.
+- The app is now AI-2 Gopher. The command is `ai-2-gopher`, the installer adds it to `~/.local/bin` and says so if that folder is not on your PATH, and the repository is AI-2-gopher. Bookmarks and history carry over.
 - The app speaks Spanish and German as well as English, following the computer's language. Anyone can add a language with one file, see TRANSLATING.md. The browser extension and the pages inside Saved web pages are in English for now.
 
 ## Gopher Reader extension 1.1.1 - 2026-10-23
