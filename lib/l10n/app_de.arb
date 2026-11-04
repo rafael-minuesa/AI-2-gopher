@@ -101,5 +101,12 @@
   "findCount": "{position} von {total}",
   "findPrevious": "Zurück (Umschalt+Eingabe)",
   "findNext": "Weiter (Eingabe)",
-  "closeFind": "Schließen (Esc)"
+  "closeFind": "Schließen (Esc)",
+  "exportText": "Text exportieren",
+  "exportedTo": "Gespeichert unter {path}",
+  "exportFailed": "Die Datei konnte nicht gespeichert werden: {reason}",
+  "article": "Artikel",
+  "fullPage": "Ganze Seite",
+  "links": "Links",
+  "originalPage": "Originalseite"
 }

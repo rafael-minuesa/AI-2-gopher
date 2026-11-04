@@ -95,6 +95,9 @@ class FindState extends ChangeNotifier {
 
   bool get isOpen => _open;
   String get query => _query;
+
+  /// The page as its view shows it, line by line.
+  List<String> get pageLines => _lines;
   int get total => _matches.length;
   bool get reachedLimit => _matches.length >= limit;
 

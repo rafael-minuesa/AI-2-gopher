@@ -1,6 +1,10 @@
 import 'package:ai_2_gopher/models/gopher_item.dart';
 import 'package:ai_2_gopher/screens/home_screen.dart';
+import 'dart:io';
+
 import 'package:ai_2_gopher/services/app_state.dart';
+import 'package:ai_2_gopher/services/export_text.dart';
+import 'package:ai_2_gopher/services/saved_page.dart';
 import 'package:ai_2_gopher/services/find_state.dart';
 import 'package:ai_2_gopher/services/gopher_client.dart';
 import 'package:ai_2_gopher/widgets/menu_view.dart';
@@ -269,6 +273,141 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(FocusManager.instance.primaryFocus, focusBefore);
+    });
+  });
+
+  group('export text', () {
+    test('the Downloads folder is found under its own name', () {
+      String? read(String path) => path == '/home/x/.config/user-dirs.dirs'
+          ? '# comment\nXDG_DOWNLOAD_DIR="\$HOME/Descargas"\n'
+          : null;
+      expect(
+        downloadsFolder(environment: {'HOME': '/home/x'}, read: read),
+        '/home/x/Descargas',
+      );
+      expect(
+        downloadsFolder(environment: {'HOME': '/home/x'}, read: (_) => null),
+        '/home/x/Downloads',
+      );
+      expect(
+        downloadsFolder(
+          environment: {'HOME': '/home/x'},
+          read: (_) => 'XDG_DOWNLOAD_DIR="\$HOME/"',
+        ),
+        '/home/x/Downloads',
+      );
+    });
+
+    test('names are safe and short', () {
+      expect(exportFileName('A title: with/slashes?'), 'A-title-with-slashes');
+      expect(exportFileName('Ñandú día'), 'Ñandú-día');
+      expect(exportFileName('gopher://example.org/1/x'), 'example-org-1-x');
+      expect(exportFileName('../../etc/passwd'), 'etc-passwd');
+      expect(exportFileName('???'), 'page');
+      expect(exportFileName('a' * 200).length, 80);
+    });
+
+    test('an earlier export is never overwritten', () async {
+      final folder = Directory.systemTemp.createTempSync('export');
+      addTearDown(() => folder.deleteSync(recursive: true));
+      final inside = '${folder.path}/not/yet';
+      final first = await exportText('one', 'doc', folder: inside);
+      final second = await exportText('two\n', 'doc', folder: inside);
+      expect(first, '$inside/doc.txt');
+      expect(second, '$inside/doc-2.txt');
+      expect(File(first).readAsStringSync(), 'one\n');
+      expect(File(second).readAsStringSync(), 'two\n');
+    });
+  });
+
+  group('saved pages', () {
+    const id = '11111111-1111-4111-8111-111111111111';
+    final menu = [
+      GopherItem.fromLine('iMy page\t\tnull\t0'),
+      GopherItem.fromLine('iCaptured: today\t\tnull\t0'),
+      GopherItem.fromLine('0Read article\t/text/$id/article\t127.0.0.1\t7070'),
+      GopherItem.fromLine('0Read full page\t/text/$id/page\t127.0.0.1\t7070'),
+      GopherItem.fromLine('1Saved web pages\t/\t127.0.0.1\t7070'),
+      GopherItem.fromLine(
+        'hOriginal page (browser)\tURL:https://example.org/\t127.0.0.1\t7070',
+      ),
+      GopherItem.fromLine('iLinks\t\tnull\t0'),
+      GopherItem.fromLine(
+        'h[1] A link (browser)\tURL:https://example.org/a\t127.0.0.1\t7070',
+      ),
+    ];
+
+    test('only the saved pages of this computer count', () {
+      SavedPage? of(String url) => SavedPage.of(GopherAddress.fromUrl(url));
+      expect(of('gopher://127.0.0.1:7070/1/page/$id')?.view, SavedView.links);
+      expect(
+        of('gopher://127.0.0.1:7070/0/text/$id/page')?.view,
+        SavedView.page,
+      );
+      expect(of('gopher://127.0.0.1:7071/1/page/$id'), isNull);
+      expect(of('gopher://example.org:7070/1/page/$id'), isNull);
+      expect(of('gopher://127.0.0.1:7070/1/'), isNull);
+    });
+
+    testWidgets('buttons replace the menu lines, and the links stay', (
+      tester,
+    ) async {
+      final opened = <Uri>[];
+      final state = AppState(
+        client: PageClient(menu: menu, text: 'The article'),
+        openUrl: (uri) async {
+          opened.add(uri);
+          return true;
+        },
+      );
+      addTearDown(state.dispose);
+      await tester.pumpWidget(
+        ChangeNotifierProvider<AppState>.value(
+          value: state,
+          child: const MaterialApp(home: HomeScreen()),
+        ),
+      );
+      await state.navigate('gopher://127.0.0.1:7070/1/page/$id');
+      await tester.pumpAndSettle();
+      expect(find.text('Read article'), findsNothing);
+      expect(find.text('Original page (browser)'), findsNothing);
+      expect(find.text('[1] A link (browser)'), findsOneWidget);
+      expect(find.text('Saved web pages'), findsOneWidget);
+
+      await tester.tap(find.text('Article'));
+      await tester.pumpAndSettle();
+      expect(state.savedPage?.view, SavedView.article);
+      expect(find.textContaining('The article'), findsOneWidget);
+      expect(state.exportName, 'My-page-article');
+
+      await tester.tap(find.text('Original page'));
+      await tester.pumpAndSettle();
+      expect(opened, [Uri.parse('https://example.org/')]);
+      expect(state.savedPage?.view, SavedView.article);
+    });
+
+    testWidgets('a page opened directly as text still gets its buttons', (
+      tester,
+    ) async {
+      final state = await open(
+        tester,
+        PageClient(menu: menu, text: 'Words'),
+        'gopher://127.0.0.1:7070/0/text/$id/page',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Full page'), findsOneWidget);
+      expect(find.text('Original page'), findsOneWidget);
+      expect(state.savedInfo?.title, 'My page');
+    });
+
+    testWidgets('other pages have no such buttons', (tester) async {
+      await open(
+        tester,
+        PageClient(menu: menu),
+        'gopher://example.org/1/page/$id',
+      );
+      expect(find.text('Full page'), findsNothing);
+      expect(find.text('Read article'), findsOneWidget);
     });
   });
 }

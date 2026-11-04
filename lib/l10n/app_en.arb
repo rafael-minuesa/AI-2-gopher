@@ -173,5 +173,26 @@
         "type": "String"
       }
     }
+  },
+  "exportText": "Export text",
+  "exportedTo": "Saved to {path}",
+  "exportFailed": "Could not save the file: {reason}",
+  "article": "Article",
+  "fullPage": "Full page",
+  "links": "Links",
+  "originalPage": "Original page",
+  "@exportedTo": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "@exportFailed": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
   }
 }

@@ -1,9 +1,12 @@
+import 'dart:io' show FileSystemException;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/export_text.dart';
 import '../services/find_state.dart';
+import '../services/saved_page.dart';
 import '../widgets/address_bar.dart';
 import '../widgets/chat_view.dart';
 import '../widgets/find_bar.dart';
@@ -42,6 +45,22 @@ class _HomeScreenState extends State<HomeScreen> {
   void _openFind(AppState state) {
     state.selectTab(0);
     _find.open();
+  }
+
+  Future<void> _export(AppState state) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final message = await () async {
+      try {
+        final path = await exportText(
+          _find.pageLines.join('\n'),
+          state.exportName,
+        );
+        return t.exportedTo(path);
+      } on FileSystemException catch (error) {
+        return t.exportFailed(error.osError?.message ?? error.message);
+      }
+    }();
+    messenger.showSnackBar(SnackBar(content: Text(message)));
   }
 
   /// Here rather than in a Shortcuts widget, which needs the keyboard to be
@@ -115,6 +134,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     value: () => _openFind(appState),
                     child: Text(t.findOnPage),
                   ),
+                  if (canExportText)
+                    PopupMenuItem(
+                      value: () => _export(appState),
+                      enabled: appState.canExport,
+                      child: Text(t.exportText),
+                    ),
                 ],
               )
             else ...[
@@ -133,6 +158,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 tooltip: t.findOnPage,
                 onPressed: () => _openFind(appState),
               ),
+              if (canExportText)
+                IconButton(
+                  icon: const Icon(Icons.save_alt),
+                  tooltip: t.exportText,
+                  onPressed: appState.canExport
+                      ? () => _export(appState)
+                      : null,
+                ),
             ],
             if (NativeCompanion.supported)
               IconButton(
@@ -333,6 +366,7 @@ class BrowserTab extends StatelessWidget {
           builder: (context, find, child) =>
               find.isOpen ? const FindBar() : const SizedBox.shrink(),
         ),
+        const Align(alignment: Alignment.centerLeft, child: _SavedPageBar()),
         Expanded(
           child: _ReadingSize(
             child: Consumer<AppState>(
@@ -457,7 +491,7 @@ class BrowserTab extends StatelessWidget {
                       Expanded(
                         child: MenuView(
                           key: ValueKey(state.pageId),
-                          items: state.currentMenu!,
+                          items: state.shownMenu!,
                         ),
                       ),
                     ],
@@ -469,7 +503,9 @@ class BrowserTab extends StatelessWidget {
                     content: state.currentContent!,
                     title: state.currentAddress?.type.code == 'h'
                         ? t.htmlSource
-                        : (state.currentTitle ?? t.textDocument),
+                        : (state.savedInfo?.title ??
+                              state.currentTitle ??
+                              t.textDocument),
                   );
                 }
 
@@ -506,6 +542,50 @@ class BrowserTab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Article, Full page, Links and the original page, as in the browser
+/// extension's reader.
+class _SavedPageBar extends StatelessWidget {
+  const _SavedPageBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = context.watch<AppState>();
+    final saved = state.savedPage;
+    if (saved == null) return const SizedBox.shrink();
+    final original = state.savedInfo?.original;
+    // From the left, so Original page arriving does not move the others.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Wrap(
+        alignment: WrapAlignment.start,
+        spacing: 8,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SegmentedButton<SavedView>(
+            showSelectedIcon: false,
+            segments: [
+              ButtonSegment(value: SavedView.article, label: Text(t.article)),
+              ButtonSegment(value: SavedView.page, label: Text(t.fullPage)),
+              ButtonSegment(value: SavedView.links, label: Text(t.links)),
+            ],
+            selected: {saved.view},
+            onSelectionChanged: state.isLoading
+                ? null
+                : (views) => state.navigate(saved.urlOf(views.first)),
+          ),
+          if (original != null)
+            TextButton.icon(
+              onPressed: () => state.navigateToItem(original),
+              icon: const Icon(Icons.open_in_browser),
+              label: Text(t.originalPage),
+            ),
+        ],
+      ),
     );
   }
 }

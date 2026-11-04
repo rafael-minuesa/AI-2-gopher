@@ -4,6 +4,8 @@
 
 - A- and A+ change the size of the text you read, in pages, the chat, Bookmarks and History, and the app remembers it. Ctrl and + or -, and Ctrl+0 for the normal size.
 - Find on this page: the search button or Ctrl+F. Every match is marked and the current one brought into sight, with Enter and Shift+Enter or F3 and Shift+F3 to move between them, and Esc to close. It works on documents, menus and the chat, and ignores case and accents, except that ñ stays its own letter.
+- Export text saves the page you are looking at, a document, a menu or the chat, as a new text file in your Downloads folder, and says where.
+- A page saved from the browser has buttons for Article, Full page, Links and Original page, as in the extension's reader. Other Gopher clients still get them as menu lines.
 
 ## 1.4.0+7 - 2026-11-04
 
