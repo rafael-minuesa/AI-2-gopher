@@ -59,7 +59,7 @@ export async function verifyNative(native,id,expected='A quieter way to read') {
     const files=[...await filesUnder(native.env.XDG_CONFIG_HOME),...await filesUnder(native.env.XDG_DATA_HOME)];
     for(const file of files) {
       if(file.includes('NativeMessagingHosts')) continue;
-      if((await readFile(file,'utf8')).includes('/page/'+id)) return true;
+      if((await readFile(file,'utf8')).includes('/text/'+id+'/article')) return true;
     }
     return false;
   });
