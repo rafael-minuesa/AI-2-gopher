@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'services/app_state.dart';
 import 'services/native_companion.dart';
+import 'services/saved_page.dart';
 import 'screens/home_screen.dart';
 import 'theme.dart';
 import 'l10n/l10n.dart';
@@ -22,7 +23,7 @@ class GopherApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) {
         final state = AppState()..init();
-        if (initialUrl != null) state.navigate(initialUrl!);
+        if (initialUrl != null) state.navigate(SavedPage.opening(initialUrl!));
         if (!kIsWeb && defaultTargetPlatform == TargetPlatform.linux) {
           const MethodChannel(
             'org.gopherclient/navigation',
