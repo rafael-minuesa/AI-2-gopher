@@ -73,7 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
               final url = state.currentAddress?.toUrl();
               if (url == null ||
                   state.currentAddress!.isLocalQuestion ||
-                  state.currentAddress!.isLocalChat) {
+                  state.currentAddress!.isLocalChat ||
+                  state.currentAddress!.isLocalChatMenu) {
                 return const SizedBox.shrink();
               }
 

@@ -49,6 +49,7 @@ class StreamingClient extends GopherClient {
 class ChatClient extends GopherClient {
   final List<GopherItem> first;
   final asked = <GopherAddress>[];
+  final opened = <GopherAddress>[];
   Completer<List<GopherItem>>? _answer;
   void Function(List<GopherItem>)? partial;
 
@@ -63,6 +64,13 @@ class ChatClient extends GopherClient {
     GopherRequest? request,
     void Function(List<GopherItem>)? onPartial,
   }) {
+    opened.add(address);
+    if (address.type == GopherItemType.directory) {
+      return Future.value([
+        GopherItem.fromLine('7Saved one\t/chat/k\t127.0.0.1\t7071'),
+        GopherItem.fromLine('1Delete all\t/chats/forget/all\t127.0.0.1\t7071'),
+      ]);
+    }
     if (address.query == null) return Future.value(first);
     asked.add(address);
     partial = onPartial;
@@ -380,6 +388,25 @@ void main() {
       client.finish([...lines, next()]);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('what else the server offers becomes buttons', (tester) async {
+      final client = await open(tester, [
+        GopherItem.fromLine('iAn answer'),
+        next(),
+        fresh(),
+        GopherItem.fromLine('1Earlier conversations\t/chats\t127.0.0.1\t7071'),
+        GopherItem.fromLine(
+          '1Delete this conversation\t/chats/forget/k\t127.0.0.1\t7071',
+        ),
+      ]);
+      expect(find.text('Earlier conversations'), findsOneWidget);
+      expect(find.text('Delete this conversation'), findsOneWidget);
+      await tester.tap(find.text('Earlier conversations'));
+      await tester.pumpAndSettle();
+      expect(client.opened.last.selector, '/chats');
+      expect(find.byType(MenuView), findsOneWidget);
+      expect(find.text('127.0.0.1:7071'), findsNothing);
     });
 
     testWidgets('a failure keeps the conversation and the box', (tester) async {

@@ -91,9 +91,11 @@ class _MenuItemTile extends StatelessWidget {
     return ListTile(
       leading: _getIcon(item.type),
       title: Text(item.displayText),
+      // The address only says something about another computer.
       subtitle:
-          item.type == GopherItemType.directory ||
-              item.type == GopherItemType.file
+          (item.type == GopherItemType.directory ||
+                  item.type == GopherItemType.file) &&
+              !item.address.isLoopback
           ? Text(
               '${item.host}:${item.port}',
               style: Theme.of(context).textTheme.bodySmall,

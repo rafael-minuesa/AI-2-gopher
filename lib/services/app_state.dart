@@ -283,7 +283,11 @@ class AppState extends ChangeNotifier {
       _notify();
       // A question to this computer stays out of the saved history, which
       // would ask it again when opened.
-      if (address.isLocalQuestion || address.isLocalChat) return;
+      if (address.isLocalQuestion ||
+          address.isLocalChat ||
+          address.isLocalChatMenu) {
+        return;
+      }
       // A persistence error must not hide the successfully loaded page.
       await _withStorage(() async {
         await _storage.addToHistory(

@@ -224,6 +224,12 @@ class GopherAddress {
       isLoopback &&
       (selector == '/chat' || selector.startsWith('/chat/'));
 
+  /// The menus of saved conversations. They stay out of history like the chat.
+  bool get isLocalChatMenu =>
+      type == GopherItemType.directory &&
+      isLoopback &&
+      (selector == '/chats' || selector.startsWith('/chats/'));
+
   /// A conversation is one page, whatever was asked in it.
   String get shownUrl => isLocalChat
       ? GopherAddress(

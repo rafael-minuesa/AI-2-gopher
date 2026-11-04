@@ -213,6 +213,17 @@ void main() {
       expect(state.currentAddress!.selector, '/chat');
     });
 
+    test('the conversations menu stays out of history', () async {
+      await state.navigate('gopher://127.0.0.1:7071/1/chats');
+      expect(state.error, isNull);
+      expect(state.isChat, isFalse);
+      expect(state.history, isEmpty);
+      await state.navigate('gopher://127.0.0.1:7071/7/chat/k');
+      expect(state.isChat, isTrue);
+      await state.goBack();
+      expect(state.currentAddress!.selector, '/chats');
+    });
+
     test('other search items on this computer still need a query', () async {
       await state.navigate('gopher://127.0.0.1:7071/7/search/x');
       expect(state.error, isNotNull);
