@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0+7 - 2026-11-04
+
+- The AI-2 chat page has buttons for what the server offers: earlier conversations and deleting this one. The list of conversations is an ordinary Gopher menu, and choosing one reopens it on the chat page.
+- Menus from this computer no longer show its address under each folder.
+
 ## 1.3.0+6 - 2026-11-04
 
 - The AI-2 chat is one page: the whole conversation, with a box for the next question at the bottom instead of a popup. The box grows as you type, Enter sends and Shift+Enter starts a new line. The page follows the answer unless you scroll up to reread. While the model is silent, the dots after its "Processing" line count from one to three.

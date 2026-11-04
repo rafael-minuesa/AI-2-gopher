@@ -83,7 +83,11 @@ class _ChatViewState extends State<ChatView> {
     final state = context.watch<AppState>();
     final items = state.chatItems;
     final lines = items
-        .where((item) => item.type != GopherItemType.search)
+        .where(
+          (item) =>
+              item.type != GopherItemType.search &&
+              item.type != GopherItemType.directory,
+        )
         .toList();
     // Only until the first words of the answer.
     if (!state.isLoading || lines.isEmpty || !lines.last.isChatStatus) {
@@ -95,6 +99,8 @@ class _ChatViewState extends State<ChatView> {
     final hasConversation = items.any(
       (i) => i.isSearchItem && i.selector.startsWith('/chat/'),
     );
+    // Whatever else the server offers: earlier conversations, delete this one.
+    final menus = items.where((i) => i.type == GopherItemType.directory);
     _follow();
     return ColoredBox(
       color: Theme.of(context).colorScheme.surface,
@@ -155,20 +161,33 @@ class _ChatViewState extends State<ChatView> {
               ],
             ),
           ),
-          if (fresh != null && hasConversation && !state.isLoading)
+          if (!state.isLoading)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: () {
-                    _following = true;
-                    state.navigateToItem(fresh);
-                    _focus.requestFocus();
-                  },
-                  icon: const Icon(Icons.add_comment_outlined),
-                  label: Text(fresh.displayText),
-                ),
+              child: Wrap(
+                spacing: 8,
+                children: [
+                  if (fresh != null && hasConversation)
+                    TextButton.icon(
+                      onPressed: () {
+                        _following = true;
+                        state.navigateToItem(fresh);
+                        _focus.requestFocus();
+                      },
+                      icon: const Icon(Icons.add_comment_outlined),
+                      label: Text(fresh.displayText),
+                    ),
+                  for (final menu in menus)
+                    TextButton.icon(
+                      onPressed: () => state.navigateToItem(menu),
+                      icon: Icon(
+                        menu.selector.contains('/forget/')
+                            ? Icons.delete_outline
+                            : Icons.history,
+                      ),
+                      label: Text(menu.displayText),
+                    ),
+                ],
               ),
             ),
         ],
