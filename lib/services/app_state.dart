@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/gopher_item.dart';
+import 'export_text.dart';
 import 'gopher_client.dart';
+import 'saved_page.dart';
 import 'storage_service.dart';
 import '../l10n/l10n.dart';
 
@@ -40,6 +42,7 @@ class AppState extends ChangeNotifier {
   String? _error;
   String? _storageWarning;
   int _selectedTab = 0;
+  double _textSize = 1.0;
   final List<_Visit> _navigationHistory = [];
   int _navigationIndex = -1;
   List<Bookmark> _bookmarks = [];
@@ -49,6 +52,7 @@ class AppState extends ChangeNotifier {
   bool _disposed = false;
   _Visit? _retryVisit;
   int? _retryIndex;
+  SavedPageInfo? _savedInfo;
 
   GopherAddress? get currentAddress => _currentAddress;
   String? get currentTitle => _currentTitle;
@@ -61,10 +65,77 @@ class AppState extends ChangeNotifier {
   /// and keeps it from its first lines to its last.
   int get pageId => _requestId;
   String? get currentContent => _currentContent;
+
+  /// The page saved from the browser being shown, if it is one.
+  SavedPage? get savedPage => SavedPage.of(_currentAddress);
+
+  /// Its title and original address, once known.
+  SavedPageInfo? get savedInfo {
+    final info = _savedInfo;
+    return info != null && info.id == savedPage?.id ? info : null;
+  }
+
+  /// The menu as it reads: on a saved page, without what its buttons replace.
+  List<GopherItem>? get shownMenu {
+    final menu = _currentMenu;
+    final info = savedInfo;
+    return menu == null || info == null ? menu : info.withoutViews(menu);
+  }
+
+  bool get canExport =>
+      canExportText &&
+      !_isLoading &&
+      _selectedTab == 0 &&
+      (isChat || _currentMenu != null || _currentContent != null);
+
+  /// What to call the file Export text writes.
+  String get exportName {
+    final address = _currentAddress;
+    final saved = savedPage;
+    final info = savedInfo;
+    if (saved != null && info != null) {
+      return exportFileName('${info.title} ${saved.view.name}');
+    }
+    if (address != null && address.isLocalChat) return 'ai-2-chat';
+    if (address != null && address.type == GopherItemType.file) {
+      final last = address.selector.split('/').last;
+      final dot = last.lastIndexOf('.');
+      if (dot > 0) return exportFileName(last.substring(0, dot));
+    }
+    return exportFileName(_currentTitle ?? '');
+  }
+
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get storageWarning => _storageWarning;
   int get selectedTab => _selectedTab;
+
+  /// The sizes A- and A+ step through.
+  static const textSizes = [0.8, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0];
+
+  double get textSize => _textSize;
+  bool get canShrinkText => _textSize > textSizes.first;
+  bool get canGrowText => _textSize < textSizes.last;
+
+  void growText() => _setTextSize(
+    textSizes.firstWhere((s) => s > _textSize, orElse: () => textSizes.last),
+  );
+
+  void shrinkText() => _setTextSize(
+    textSizes.lastWhere((s) => s < _textSize, orElse: () => textSizes.first),
+  );
+
+  void resetTextSize() => _setTextSize(1.0);
+
+  void _setTextSize(double size) {
+    if (size == _textSize) return;
+    _textSize = size;
+    _notify();
+    // Not saved means it lasts until the app closes, which is no reason to
+    // interrupt someone who is reading.
+    _storage.saveTextSize(size).catchError((Object _) {});
+  }
+
   bool get canGoBack => !_isLoading && _navigationIndex > 0;
   bool get canGoForward =>
       !_isLoading && _navigationIndex < _navigationHistory.length - 1;
@@ -109,6 +180,8 @@ class AppState extends ChangeNotifier {
       await _storage.init();
       _bookmarks = await _storage.getBookmarks();
       _history = await _storage.getHistory();
+      final size = await _storage.getTextSize();
+      if (size != null && textSizes.contains(size)) _textSize = size;
     });
   }
 
@@ -164,7 +237,7 @@ class AppState extends ChangeNotifier {
       selectTab(0);
       return;
     }
-    await navigate(url);
+    await navigate(SavedPage.opening(url));
   }
 
   /// The next question of the conversation on the page.
@@ -281,6 +354,7 @@ class AppState extends ChangeNotifier {
       _isLoading = false;
       _retryVisit = null;
       _notify();
+      _learnSavedPage(address, menu);
       // A question to this computer stays out of the saved history, which
       // would ask it again when opened.
       if (address.isLocalQuestion ||
@@ -304,6 +378,31 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// The buttons of a saved page need its menu, which a text view of it has
+  /// not fetched. Without it they just lack Original page.
+  Future<void> _learnSavedPage(
+    GopherAddress address,
+    List<GopherItem>? menu,
+  ) async {
+    final saved = SavedPage.of(address);
+    if (saved == null) return;
+    if (menu != null) {
+      _savedInfo = SavedPageInfo.fromMenu(saved.id, menu);
+      _notify();
+      return;
+    }
+    if (_savedInfo?.id == saved.id) return;
+    try {
+      final items = await _client.fetchMenu(
+        GopherAddress.fromUrl(saved.urlOf(SavedView.links)),
+      );
+      _savedInfo = SavedPageInfo.fromMenu(saved.id, items);
+      _notify();
+    } catch (_) {
+      // Reading the page is not affected.
+    }
+  }
+
   void _showPartial(int id, List<GopherItem> soFar) {
     if (id != _requestId || _disposed) return;
     _partialMenu = soFar;
@@ -322,7 +421,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> navigateToItem(GopherItem item) =>
-      navigate(item.toUrl(), title: item.displayText);
+      navigate(SavedPage.opening(item.toUrl()), title: item.displayText);
 
   Future<void> viewFile(GopherItem item) => navigateToItem(item);
 

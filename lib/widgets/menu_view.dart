@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/gopher_item.dart';
 import '../services/app_state.dart';
+import '../services/find_state.dart';
+import 'find_bar.dart';
 import '../l10n/l10n.dart';
 
 class MenuView extends StatefulWidget {
@@ -18,6 +20,7 @@ class MenuView extends StatefulWidget {
 
 class _MenuViewState extends State<MenuView> {
   final ScrollController _scroll = ScrollController();
+  late final ListFinder _finder = ListFinder(_scroll);
 
   @override
   void didUpdateWidget(MenuView old) {
@@ -43,14 +46,17 @@ class _MenuViewState extends State<MenuView> {
 
   @override
   Widget build(BuildContext context) {
+    final find = FindState.of(context);
+    find?.report([for (final item in widget.items) item.displayText]);
+    _finder.follow(find);
     return SelectionArea(
       child: ListView.builder(
         controller: _scroll,
         itemCount: widget.items.length,
-        itemBuilder: (context, index) {
-          final item = widget.items[index];
-          return _MenuItemTile(item: item);
-        },
+        itemBuilder: (context, index) => _finder.keep(
+          index,
+          _MenuItemTile(item: widget.items[index], line: index),
+        ),
       ),
     );
   }
@@ -58,8 +64,9 @@ class _MenuViewState extends State<MenuView> {
 
 class _MenuItemTile extends StatelessWidget {
   final GopherItem item;
+  final int line;
 
-  const _MenuItemTile({required this.item});
+  const _MenuItemTile({required this.item, required this.line});
 
   @override
   Widget build(BuildContext context) {
@@ -67,8 +74,9 @@ class _MenuItemTile extends StatelessWidget {
     if (item.type == GopherItemType.info) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-        child: Text(
+        child: FoundText(
           item.displayText,
+          line: line,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
@@ -80,8 +88,9 @@ class _MenuItemTile extends StatelessWidget {
     if (item.type == GopherItemType.error) {
       return ListTile(
         leading: const Icon(Icons.error, color: Colors.red),
-        title: Text(
+        title: FoundText(
           item.displayText,
+          line: line,
           style: const TextStyle(color: Colors.red),
         ),
       );
@@ -90,7 +99,7 @@ class _MenuItemTile extends StatelessWidget {
     // Navigable items
     return ListTile(
       leading: _getIcon(item.type),
-      title: Text(item.displayText),
+      title: FoundText(item.displayText, line: line),
       // The address only says something about another computer.
       subtitle:
           (item.type == GopherItemType.directory ||

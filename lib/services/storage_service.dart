@@ -51,6 +51,7 @@ class StorageService {
   static const String _bookmarksKey = 'bookmarks';
   static const String _historyKey = 'history';
   static const int _maxHistoryItems = 100;
+  static const String _textSizeKey = 'textSize';
 
   SharedPreferences? _prefs;
   Future<void>? _initialization;
@@ -186,6 +187,20 @@ class StorageService {
       throw StateError('Could not save history');
     }
   }
+
+  // Text size
+
+  Future<double?> getTextSize() async {
+    await _ensureInitialized();
+    return _prefs!.getDouble(_textSizeKey);
+  }
+
+  Future<void> saveTextSize(double size) => _mutate(() async {
+    await _ensureInitialized();
+    if (!await _prefs!.setDouble(_textSizeKey, size)) {
+      throw StateError('Could not save the text size');
+    }
+  });
 
   Future<void> _ensureInitialized() async {
     if (_prefs == null) {

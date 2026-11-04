@@ -92,5 +92,21 @@
   "featureGopherBody": "Explora directorios y archivos, y busca en servidores",
   "featureDarkTitle": "Modo oscuro",
   "featureDarkBody": "Una interfaz cuidada con modo oscuro",
-  "couldNotOpenUrl": "No se ha podido abrir {url}"
+  "couldNotOpenUrl": "No se ha podido abrir {url}",
+  "smallerText": "Letra más pequeña (Ctrl -)",
+  "largerText": "Letra más grande (Ctrl +)",
+  "findOnPage": "Buscar en esta página",
+  "textAndFind": "Tamaño de letra y buscar",
+  "findNothing": "No se encuentra",
+  "findCount": "{position} de {total}",
+  "findPrevious": "Anterior (Mayús+Intro)",
+  "findNext": "Siguiente (Intro)",
+  "closeFind": "Cerrar (Esc)",
+  "exportText": "Exportar texto",
+  "exportedTo": "Guardado en {path}",
+  "exportFailed": "No se pudo guardar el archivo: {reason}",
+  "article": "Artículo",
+  "fullPage": "Página completa",
+  "links": "Enlaces",
+  "originalPage": "Página original"
 }
