@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- A- and A+ change the size of the text you read, in pages, the chat, Bookmarks and History, and the app remembers it. Ctrl and + or -, and Ctrl+0 for the normal size.
+- Find on this page: the search button or Ctrl+F. Every match is marked and the current one brought into sight, with Enter and Shift+Enter or F3 and Shift+F3 to move between them, and Esc to close. It works on documents, menus and the chat.
+
 ## 1.4.0+7 - 2026-11-04
 
 - The AI-2 chat page has buttons for what the server offers: earlier conversations and deleting this one. The list of conversations is an ordinary Gopher menu, and choosing one reopens it on the chat page.

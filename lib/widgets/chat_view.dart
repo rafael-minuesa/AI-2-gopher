@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/gopher_item.dart';
 import '../services/app_state.dart';
+import '../services/find_state.dart';
+import 'find_bar.dart';
 import '../l10n/l10n.dart';
 
 /// The conversation and the box for the next question, on one page. A chat
@@ -22,6 +24,7 @@ class _ChatViewState extends State<ChatView> {
   static const _maxQuestion = 1300;
 
   final ScrollController _scroll = ScrollController();
+  late final ListFinder _finder = ListFinder(_scroll);
   final TextEditingController _box = TextEditingController();
   final FocusNode _focus = FocusNode();
   bool _following = true;
@@ -101,7 +104,11 @@ class _ChatViewState extends State<ChatView> {
     );
     // Whatever else the server offers: earlier conversations, delete this one.
     final menus = items.where((i) => i.type == GopherItemType.directory);
-    _follow();
+    final find = FindState.of(context);
+    find?.report([for (final line in lines) line.displayText]);
+    _finder.follow(find);
+    // Someone looking for a word is not reading the end of the answer.
+    if (find == null || find.query.isEmpty) _follow();
     return ColoredBox(
       color: Theme.of(context).colorScheme.surface,
       child: Column(
@@ -113,7 +120,10 @@ class _ChatViewState extends State<ChatView> {
                 controller: _scroll,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: lines.length,
-                itemBuilder: (context, index) => _ChatLine(item: lines[index]),
+                itemBuilder: (context, index) => _finder.keep(
+                  index,
+                  _ChatLine(item: lines[index], line: index),
+                ),
               ),
             ),
           ),
@@ -216,8 +226,9 @@ class _ChatViewState extends State<ChatView> {
 
 class _ChatLine extends StatelessWidget {
   final GopherItem item;
+  final int line;
 
-  const _ChatLine({required this.item});
+  const _ChatLine({required this.item, required this.line});
 
   @override
   Widget build(BuildContext context) {
@@ -236,8 +247,9 @@ class _ChatLine extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 1),
-      child: Text(
+      child: FoundText(
         text,
+        line: line,
         style: item.type == GopherItemType.error
             ? style?.copyWith(color: scheme.error)
             : text.startsWith('> ')

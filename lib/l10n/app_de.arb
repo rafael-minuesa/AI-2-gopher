@@ -92,5 +92,14 @@
   "featureGopherBody": "Durchstöbere Verzeichnisse und Dateien und durchsuche Server",
   "featureDarkTitle": "Dunkler Modus",
   "featureDarkBody": "Eine schöne Oberfläche mit dunklem Modus",
-  "couldNotOpenUrl": "{url} konnte nicht geöffnet werden"
+  "couldNotOpenUrl": "{url} konnte nicht geöffnet werden",
+  "smallerText": "Kleinere Schrift (Strg -)",
+  "largerText": "Größere Schrift (Strg +)",
+  "findOnPage": "Auf dieser Seite suchen",
+  "textAndFind": "Schriftgröße und Suche",
+  "findNothing": "Nicht gefunden",
+  "findCount": "{position} von {total}",
+  "findPrevious": "Zurück (Umschalt+Eingabe)",
+  "findNext": "Weiter (Eingabe)",
+  "closeFind": "Schließen (Esc)"
 }

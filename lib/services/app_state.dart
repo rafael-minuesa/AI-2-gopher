@@ -40,6 +40,7 @@ class AppState extends ChangeNotifier {
   String? _error;
   String? _storageWarning;
   int _selectedTab = 0;
+  double _textSize = 1.0;
   final List<_Visit> _navigationHistory = [];
   int _navigationIndex = -1;
   List<Bookmark> _bookmarks = [];
@@ -65,6 +66,33 @@ class AppState extends ChangeNotifier {
   String? get error => _error;
   String? get storageWarning => _storageWarning;
   int get selectedTab => _selectedTab;
+
+  /// The sizes A- and A+ step through.
+  static const textSizes = [0.8, 0.9, 1.0, 1.15, 1.3, 1.5, 1.75, 2.0];
+
+  double get textSize => _textSize;
+  bool get canShrinkText => _textSize > textSizes.first;
+  bool get canGrowText => _textSize < textSizes.last;
+
+  void growText() => _setTextSize(
+    textSizes.firstWhere((s) => s > _textSize, orElse: () => textSizes.last),
+  );
+
+  void shrinkText() => _setTextSize(
+    textSizes.lastWhere((s) => s < _textSize, orElse: () => textSizes.first),
+  );
+
+  void resetTextSize() => _setTextSize(1.0);
+
+  void _setTextSize(double size) {
+    if (size == _textSize) return;
+    _textSize = size;
+    _notify();
+    // Not saved means it lasts until the app closes, which is no reason to
+    // interrupt someone who is reading.
+    _storage.saveTextSize(size).catchError((Object _) {});
+  }
+
   bool get canGoBack => !_isLoading && _navigationIndex > 0;
   bool get canGoForward =>
       !_isLoading && _navigationIndex < _navigationHistory.length - 1;
@@ -109,6 +137,8 @@ class AppState extends ChangeNotifier {
       await _storage.init();
       _bookmarks = await _storage.getBookmarks();
       _history = await _storage.getHistory();
+      final size = await _storage.getTextSize();
+      if (size != null && textSizes.contains(size)) _textSize = size;
     });
   }
 

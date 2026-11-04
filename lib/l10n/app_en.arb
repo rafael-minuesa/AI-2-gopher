@@ -154,5 +154,24 @@
         "type": "String"
       }
     }
+  },
+  "smallerText": "Smaller text (Ctrl -)",
+  "largerText": "Larger text (Ctrl +)",
+  "findOnPage": "Find on this page",
+  "textAndFind": "Text size and find",
+  "findNothing": "Not found",
+  "findCount": "{position} of {total}",
+  "findPrevious": "Previous (Shift+Enter)",
+  "findNext": "Next (Enter)",
+  "closeFind": "Close (Esc)",
+  "@findCount": {
+    "placeholders": {
+      "position": {
+        "type": "int"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
   }
 }
