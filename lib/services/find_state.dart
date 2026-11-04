@@ -1,6 +1,65 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+// Each letter to one letter, so a place in the folded text is the same place
+// in the original. N with a tilde is not here: in Spanish it is its own letter,
+// and "ano" is not "año".
+const _plain = {
+  'á': 'a',
+  'à': 'a',
+  'â': 'a',
+  'ä': 'a',
+  'ã': 'a',
+  'å': 'a',
+  'ą': 'a',
+  'ć': 'c',
+  'ç': 'c',
+  'č': 'c',
+  'é': 'e',
+  'è': 'e',
+  'ê': 'e',
+  'ë': 'e',
+  'ę': 'e',
+  'ě': 'e',
+  'í': 'i',
+  'ì': 'i',
+  'î': 'i',
+  'ï': 'i',
+  'ł': 'l',
+  'ń': 'n',
+  'ó': 'o',
+  'ò': 'o',
+  'ô': 'o',
+  'ö': 'o',
+  'õ': 'o',
+  'ś': 's',
+  'š': 's',
+  'ú': 'u',
+  'ù': 'u',
+  'û': 'u',
+  'ü': 'u',
+  'ý': 'y',
+  'ÿ': 'y',
+  'ź': 'z',
+  'ż': 'z',
+  'ž': 'z',
+};
+
+/// Without case or accents, and exactly as long as [text].
+String _folded(String text) {
+  final out = StringBuffer();
+  for (final unit in text.codeUnits) {
+    if (unit < 0x80) {
+      out.writeCharCode(unit >= 0x41 && unit <= 0x5A ? unit + 32 : unit);
+      continue;
+    }
+    final char = String.fromCharCode(unit);
+    final lower = char.toLowerCase();
+    out.write(lower.length == 1 ? (_plain[lower] ?? lower) : char);
+  }
+  return out.toString();
+}
+
 /// One place a search matched: a line of the page and where in it.
 class FindMatch {
   final int line;
@@ -121,18 +180,19 @@ class FindState extends ChangeNotifier {
     final found = <FindMatch>[];
     final byLine = <int, List<FindMatch>>{};
     if (_query.isNotEmpty) {
-      final pattern = RegExp(
-        RegExp.escape(_query),
-        caseSensitive: false,
-        unicode: true,
-      );
+      final wanted = _folded(_query);
       outer:
       for (var line = 0; line < _lines.length; line++) {
-        for (final m in pattern.allMatches(_lines[line])) {
-          final match = FindMatch(line, m.start, m.end);
+        final text = _folded(_lines[line]);
+        var from = 0;
+        while (true) {
+          final start = text.indexOf(wanted, from);
+          if (start < 0) break;
+          final match = FindMatch(line, start, start + wanted.length);
           found.add(match);
           (byLine[line] ??= []).add(match);
           if (found.length >= limit) break outer;
+          from = match.end;
         }
       }
     }

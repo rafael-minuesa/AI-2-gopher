@@ -92,6 +92,26 @@ void main() {
       expect(state.total, 1);
     });
 
+    test('accents do not matter either way, and the place stays exact', () {
+      final state = FindState()
+        ..report(['Vive en París', 'paris', 'ÜBER über']);
+      state.setQuery('paris');
+      expect(state.total, 2);
+      expect(state.on(0).single.start, 8);
+      expect(state.on(0).single.end, 13);
+      state.setQuery('parís');
+      expect(state.total, 2);
+      state.setQuery('uber');
+      expect(state.total, 2);
+    });
+
+    test('n with a tilde is its own letter', () {
+      final state = FindState()..report(['el año', 'el ano']);
+      state.setQuery('año');
+      expect(state.on(0), hasLength(1));
+      expect(state.on(1), isEmpty);
+    });
+
     test('text arriving does not move the current match', () {
       final state = FindState()..report(['one word']);
       state.setQuery('word');

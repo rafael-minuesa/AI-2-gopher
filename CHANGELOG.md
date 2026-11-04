@@ -3,7 +3,7 @@
 ## Unreleased
 
 - A- and A+ change the size of the text you read, in pages, the chat, Bookmarks and History, and the app remembers it. Ctrl and + or -, and Ctrl+0 for the normal size.
-- Find on this page: the search button or Ctrl+F. Every match is marked and the current one brought into sight, with Enter and Shift+Enter or F3 and Shift+F3 to move between them, and Esc to close. It works on documents, menus and the chat.
+- Find on this page: the search button or Ctrl+F. Every match is marked and the current one brought into sight, with Enter and Shift+Enter or F3 and Shift+F3 to move between them, and Esc to close. It works on documents, menus and the chat, and ignores case and accents, except that ñ stays its own letter.
 
 ## 1.4.0+7 - 2026-11-04
 
