@@ -237,7 +237,7 @@ class AppState extends ChangeNotifier {
       selectTab(0);
       return;
     }
-    await navigate(url);
+    await navigate(SavedPage.opening(url));
   }
 
   /// The next question of the conversation on the page.
@@ -421,7 +421,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> navigateToItem(GopherItem item) =>
-      navigate(item.toUrl(), title: item.displayText);
+      navigate(SavedPage.opening(item.toUrl()), title: item.displayText);
 
   Future<void> viewFile(GopherItem item) => navigateToItem(item);
 

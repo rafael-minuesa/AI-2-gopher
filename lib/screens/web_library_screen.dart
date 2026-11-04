@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/saved_page.dart';
 import '../services/native_companion.dart';
 import '../companion/client.dart';
 import '../l10n/l10n.dart';
@@ -152,7 +153,7 @@ class _WebLibraryScreenState extends State<WebLibraryScreen> {
                               Navigator.pop(context);
                               state.selectTab(0);
                               state.navigate(
-                                page['url'] as String,
+                                SavedPage.opening(page['url'] as String),
                                 title: page['title'] as String,
                               );
                             },

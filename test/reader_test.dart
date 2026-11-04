@@ -386,6 +386,21 @@ void main() {
       expect(state.savedPage?.view, SavedView.article);
     });
 
+    test('a saved page opens on its article, anything else as it is', () {
+      expect(
+        SavedPage.opening('gopher://127.0.0.1:7070/1/page/$id'),
+        'gopher://127.0.0.1:7070/0/text/$id/article',
+      );
+      for (final url in [
+        'gopher://127.0.0.1:7070/0/text/$id/page',
+        'gopher://127.0.0.1:7070/1/',
+        'gopher://example.org/1/page/$id',
+        'not an address',
+      ]) {
+        expect(SavedPage.opening(url), url);
+      }
+    });
+
     testWidgets('a page opened directly as text still gets its buttons', (
       tester,
     ) async {

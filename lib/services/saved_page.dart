@@ -29,6 +29,22 @@ class SavedPage {
     );
   }
 
+  /// Where a page saved from the browser opens: the article, as in the
+  /// extension's reader. Its Links view is one button away, and any other
+  /// address stays as it is.
+  static String opening(String url) {
+    try {
+      final saved = of(GopherAddress.fromUrl(url));
+      return saved?.view == SavedView.links
+          ? saved!.urlOf(SavedView.article)
+          : url;
+    } on ArgumentError {
+      return url;
+    } on FormatException {
+      return url;
+    }
+  }
+
   String urlOf(SavedView view) => switch (view) {
     SavedView.article => 'gopher://127.0.0.1:$companionPort/0/text/$id/article',
     SavedView.page => 'gopher://127.0.0.1:$companionPort/0/text/$id/page',
