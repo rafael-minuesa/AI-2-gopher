@@ -43,6 +43,7 @@
   "exampleServers": "Servidores de ejemplo:",
   "yourQuestion": "Tu pregunta",
   "searchQuery": "Texto a buscar",
+  "knowledgeSearchQuery": "Una búsqueda nueva, aparte de tu chat",
   "ask": "Preguntar",
   "search": "Buscar",
   "copyToClipboard": "Copiar al portapapeles",

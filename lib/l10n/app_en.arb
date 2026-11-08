@@ -71,6 +71,7 @@
   "exampleServers": "Example servers:",
   "yourQuestion": "Your question",
   "searchQuery": "Search query",
+  "knowledgeSearchQuery": "A new search, separate from your chat",
   "ask": "Ask",
   "search": "Search",
   "copyToClipboard": "Copy to clipboard",

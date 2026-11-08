@@ -8,6 +8,7 @@ import 'package:ai_2_gopher/models/gopher_item.dart';
 import 'package:ai_2_gopher/screens/home_screen.dart';
 import 'package:ai_2_gopher/services/app_state.dart';
 import 'package:ai_2_gopher/services/gopher_client.dart';
+import 'package:ai_2_gopher/widgets/chat_view.dart';
 import 'package:ai_2_gopher/widgets/menu_view.dart';
 import 'package:ai_2_gopher/widgets/text_view.dart';
 
@@ -153,21 +154,53 @@ void main() {
           home: Scaffold(
             body: MenuView(
               items: [
-                GopherItem.fromLine(
-                  '7Ask First Aid\t/search/first-aid\t127.0.0.1\t7071',
-                ),
+                GopherItem.fromLine('7Ask the AI\t/ask\t127.0.0.1\t7071'),
               ],
             ),
           ),
         ),
       ),
     );
-    await tester.tap(find.text('Ask First Aid'));
+    await tester.tap(find.text('Ask the AI'));
     await tester.pumpAndSettle();
     expect(find.text('Your question'), findsOneWidget);
     expect(find.widgetWithText(TextButton, 'Ask'), findsOneWidget);
     expect(find.text('Search query'), findsNothing);
   });
+
+  for (final selector in ['/knowledge/search', '/search/first-aid']) {
+    testWidgets('$selector says it is a search of its own', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final state = AppState(client: ScreenClient());
+      addTearDown(state.dispose);
+      await state.init();
+      await tester.pumpWidget(
+        ChangeNotifierProvider.value(
+          value: state,
+          child: MaterialApp(
+            home: Scaffold(
+              body: MenuView(
+                items: [
+                  GopherItem.fromLine(
+                    '7Look it up\t$selector\t127.0.0.1\t7071',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Look it up'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('A new search, separate from your chat'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(TextButton, 'Search'), findsOneWidget);
+      expect(find.text('Your question'), findsNothing);
+      expect(find.widgetWithText(TextButton, 'Ask'), findsNothing);
+    });
+  }
 
   testWidgets('the text of a menu can be selected', (tester) async {
     await tester.pumpWidget(
@@ -407,6 +440,41 @@ void main() {
       expect(client.opened.last.selector, '/chats');
       expect(find.byType(MenuView), findsOneWidget);
       expect(find.text('127.0.0.1:7071'), findsNothing);
+    });
+
+    testWidgets('Search Knowledge Packs has its own icon and opens a menu', (
+      tester,
+    ) async {
+      final knowledge = GopherItem.fromLine(
+        '1Search Knowledge Packs\t/knowledge\t127.0.0.1\t7071',
+      );
+      final client = await open(tester, [fresh(), knowledge]);
+      expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(ChatView),
+          matching: find.byIcon(Icons.history),
+        ),
+        findsNothing,
+      );
+      await tester.tap(find.text('Search Knowledge Packs'));
+      await tester.pumpAndSettle();
+      expect(client.opened.last.selector, '/knowledge');
+      expect(find.byType(MenuView), findsOneWidget);
+      expect(client.asked, isEmpty);
+    });
+
+    testWidgets('the button stays on a conversation', (tester) async {
+      await open(tester, [
+        GopherItem.fromLine('iAn answer'),
+        next(),
+        fresh(),
+        GopherItem.fromLine(
+          '1Search Knowledge Packs\t/knowledge\t127.0.0.1\t7071',
+        ),
+      ]);
+      expect(find.byIcon(Icons.menu_book_outlined), findsOneWidget);
+      expect(find.text('Search Knowledge Packs'), findsOneWidget);
     });
 
     testWidgets('a failure keeps the conversation and the box', (tester) async {

@@ -420,8 +420,10 @@ class AppState extends ChangeNotifier {
     _notify();
   }
 
-  Future<void> navigateToItem(GopherItem item) =>
-      navigate(SavedPage.opening(item.toUrl()), title: item.displayText);
+  Future<void> navigateToItem(GopherItem item) => navigate(
+    SavedPage.opening(item.toUrl()),
+    title: item.address.localDocumentName ?? item.displayText,
+  );
 
   Future<void> viewFile(GopherItem item) => navigateToItem(item);
 

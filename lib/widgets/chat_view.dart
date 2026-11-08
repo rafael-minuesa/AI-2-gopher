@@ -190,11 +190,7 @@ class _ChatViewState extends State<ChatView> {
                   for (final menu in menus)
                     TextButton.icon(
                       onPressed: () => state.navigateToItem(menu),
-                      icon: Icon(
-                        menu.selector.contains('/forget/')
-                            ? Icons.delete_outline
-                            : Icons.history,
-                      ),
+                      icon: Icon(_menuIcon(menu.selector)),
                       label: Text(menu.displayText),
                     ),
                 ],
@@ -203,6 +199,12 @@ class _ChatViewState extends State<ChatView> {
         ],
       ),
     );
+  }
+
+  IconData _menuIcon(String selector) {
+    if (selector == '/knowledge') return Icons.menu_book_outlined;
+    if (selector.contains('/forget/')) return Icons.delete_outline;
+    return Icons.history;
   }
 
   Widget _problem(BuildContext context, AppState state) {
