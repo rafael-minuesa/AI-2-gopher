@@ -217,6 +217,13 @@ class GopherAddress {
   bool get isLocalQuestion =>
       type == GopherItemType.search && query != null && isLoopback;
 
+  /// A search of the Knowledge Packs on this computer: passages come back, and
+  /// no language model is asked.
+  bool get isLocalKnowledgeSearch =>
+      type == GopherItemType.search &&
+      isLoopback &&
+      (selector == '/knowledge/search' || selector.startsWith('/search/'));
+
   /// The AI-2 chat on this computer. It opens with no question, because its
   /// page has the box for one.
   bool get isLocalChat =>

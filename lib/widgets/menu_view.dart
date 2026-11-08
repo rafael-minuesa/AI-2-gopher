@@ -180,12 +180,15 @@ class _MenuItemTile extends StatelessWidget {
   Future<void> _showSearchDialog(BuildContext context, GopherItem item) async {
     var query = '';
     // A search item on this computer is answered, often by a language model.
-    final asking = GopherAddress(
+    // The Knowledge Packs are searched instead, apart from any conversation.
+    final address = GopherAddress(
       host: item.host,
       port: item.port,
       selector: item.selector,
       type: item.type,
-    ).isLoopback;
+    );
+    final knowledge = address.isLocalKnowledgeSearch;
+    final asking = address.isLoopback && !knowledge;
 
     final result = await showDialog<String>(
       context: context,
@@ -194,7 +197,11 @@ class _MenuItemTile extends StatelessWidget {
         content: TextFormField(
           onChanged: (value) => query = value,
           decoration: InputDecoration(
-            labelText: asking ? t.yourQuestion : t.searchQuery,
+            labelText: knowledge
+                ? t.knowledgeSearchQuery
+                : asking
+                ? t.yourQuestion
+                : t.searchQuery,
             border: const OutlineInputBorder(),
             prefixIcon: Icon(asking ? Icons.question_answer : Icons.search),
           ),

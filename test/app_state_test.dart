@@ -328,6 +328,39 @@ void main() {
       expect(state.history, isEmpty);
     });
 
+    test(
+      'Back from a Knowledge Packs topic reaches the chat, asking nothing',
+      () async {
+        client.answers['/chat'] = [GopherItem.fromLine('iThe conversation')];
+        await state.navigate(url);
+        await state.navigateToItem(
+          GopherItem.fromLine('1Knowledge\t/knowledge\t127.0.0.1\t7071'),
+        );
+        await state.search(
+          GopherItem.fromLine('7All\t/knowledge/search\t127.0.0.1\t7071'),
+          'a burn',
+        );
+        await state.viewFile(
+          GopherItem.fromLine('0Topic\t/doc/aid/burns.txt\t127.0.0.1\t7071'),
+        );
+        expect(state.currentContent, 'Text for /doc/aid/burns.txt');
+
+        await state.goBack();
+        expect(state.currentAddress!.selector, '/knowledge/search');
+        await state.goBack();
+        expect(state.currentAddress!.selector, '/knowledge');
+        await state.goBack();
+        expect(state.isChat, isTrue);
+        expect(state.chatItems.single.displayText, 'The conversation');
+
+        expect(client.visits.where((v) => v.selector == '/chat').length, 1);
+        expect(
+          client.visits.where((v) => v.selector == '/knowledge/search').length,
+          1,
+        );
+      },
+    );
+
     test('a search on another computer behaves as before', () async {
       await state.navigate('gopher://example.org/7/s%09x');
       await state.navigate('gopher://example.org/1A');

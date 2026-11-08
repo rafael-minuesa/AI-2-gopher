@@ -43,6 +43,7 @@
   "exampleServers": "Beispielserver:",
   "yourQuestion": "Deine Frage",
   "searchQuery": "Suchbegriff",
+  "knowledgeSearchQuery": "Eine neue Suche, getrennt von deinem Chat",
   "ask": "Fragen",
   "search": "Suchen",
   "copyToClipboard": "In die Zwischenablage kopieren",
