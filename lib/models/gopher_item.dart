@@ -224,6 +224,14 @@ class GopherAddress {
       isLoopback &&
       (selector == '/knowledge/search' || selector.startsWith('/search/'));
 
+  /// The name of a Knowledge Pack document on this computer, which is what its
+  /// page is called, whatever the link to it said.
+  String? get localDocumentName {
+    if (type != GopherItemType.file || !isLoopback) return null;
+    final match = RegExp(r'^/doc/[^/]+/(.+)$').firstMatch(selector);
+    return match?[1];
+  }
+
   /// The AI-2 chat on this computer. It opens with no question, because its
   /// page has the box for one.
   bool get isLocalChat =>

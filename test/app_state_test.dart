@@ -344,6 +344,7 @@ void main() {
           GopherItem.fromLine('0Topic\t/doc/aid/burns.txt\t127.0.0.1\t7071'),
         );
         expect(state.currentContent, 'Text for /doc/aid/burns.txt');
+        expect(state.currentTitle, 'burns.txt');
 
         await state.goBack();
         expect(state.currentAddress!.selector, '/knowledge/search');
