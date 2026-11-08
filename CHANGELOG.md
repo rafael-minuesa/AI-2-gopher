@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.6.0+9 - 2026-11-08
+
+- The AI-2 chat page shows Search Knowledge Packs, offered by the AI-2 server, as a button with a book icon.
+- A search of the Knowledge Packs on this computer says it is a new search, separate from your chat, with a Search button instead of Ask.
+- A Knowledge Pack topic is called by its own name in its heading, History and Bookmarks, not by the link that opened it.
+
 ## 1.5.0+8 - 2026-11-05
 
 - A- and A+ change the size of the text you read, in pages, the chat, Bookmarks and History, and the app remembers it. Ctrl and + or -, and Ctrl+0 for the normal size.
