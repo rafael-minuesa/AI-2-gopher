@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../services/find_state.dart';
@@ -164,11 +165,15 @@ class _FindBarState extends State<FindBar> {
 /// brings one of them into sight though it may not have been built yet.
 class ListFinder {
   final ScrollController scroll;
+
+  /// Brings a match into sight once its line is built. Without it the line
+  /// is, which is enough where a line is a line or two high.
+  final void Function(BuildContext line, FindMatch match)? show;
   final Map<int, GlobalKey> _keys = {};
   int _seen = 0;
   int _trip = 0;
 
-  ListFinder(this.scroll);
+  ListFinder(this.scroll, {this.show});
 
   Widget keep(int line, Widget child) =>
       KeyedSubtree(key: _keys[line] ??= GlobalKey(), child: child);
@@ -179,30 +184,50 @@ class ListFinder {
     _seen = find.revision;
     final target = find.current;
     if (target == null) return;
-    _go(target.line);
+    _go(target);
   }
 
-  void _bringIntoSight(int line) {
-    final context = _keys[line]?.currentContext;
-    if (context != null) Scrollable.ensureVisible(context, alignment: 0.3);
+  void _bringIntoSight(FindMatch match) {
+    final context = _keys[match.line]?.currentContext;
+    if (context == null) return;
+    final show = this.show;
+    if (show != null) {
+      show(context, match);
+    } else {
+      Scrollable.ensureVisible(context, alignment: 0.3);
+    }
   }
 
-  Future<void> _go(int line) async {
+  /// A line that was clicked can be kept though it is far out of sight, and
+  /// says nothing about where the list is.
+  bool _inList(BuildContext? context) {
+    RenderObject? object = context?.findRenderObject();
+    while (object != null) {
+      final data = object.parentData;
+      if (data is SliverMultiBoxAdaptorParentData) return !data.keptAlive;
+      object = object.parent;
+    }
+    return false;
+  }
+
+  Future<void> _go(FindMatch match) async {
+    final line = match.line;
     final trip = ++_trip;
     await WidgetsBinding.instance.endOfFrame;
     // The lines off screen only have an estimated height, so an offset cannot
     // be worked out. Narrow it down by which lines the list has built.
     var low = 0.0;
     double? high;
-    for (var tries = 0; tries < 24; tries++) {
+    for (var tries = 0; tries < 2000; tries++) {
       if (trip != _trip || !scroll.hasClients) return;
+      _keys.removeWhere((_, key) => key.currentContext == null);
       final built = _keys.entries
-          .where((entry) => entry.value.currentContext != null)
+          .where((entry) => _inList(entry.value.currentContext))
           .map((entry) => entry.key)
           .toList();
       if (built.isEmpty) return;
       if (built.contains(line)) {
-        _bringIntoSight(line);
+        _bringIntoSight(match);
         return;
       }
       final first = built.reduce((a, b) => a < b ? a : b);
@@ -212,7 +237,12 @@ class ListFinder {
         low = scroll.offset;
       }
       final top = high ?? scroll.position.maxScrollExtent;
-      scroll.jumpTo((low + top) / 2);
+      // The list lays out every line it passes, and only lets go of them
+      // after the frame. In one jump across a long document that is the whole
+      // document in memory at once, so it goes there in steps.
+      final step = 30 * scroll.position.viewportDimension;
+      final wanted = (low + top) / 2 - scroll.offset;
+      scroll.jumpTo(scroll.offset + wanted.clamp(-step, step));
       await WidgetsBinding.instance.endOfFrame;
     }
   }
