@@ -8,6 +8,7 @@ import 'package:ai_2_gopher/services/saved_page.dart';
 import 'package:ai_2_gopher/services/find_state.dart';
 import 'package:ai_2_gopher/services/gopher_client.dart';
 import 'package:ai_2_gopher/widgets/menu_view.dart';
+import 'package:ai_2_gopher/widgets/text_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -144,7 +145,7 @@ void main() {
         'gopher://example.org/0/doc',
       );
       double scale() => MediaQuery.textScalerOf(
-        tester.element(find.byType(SelectableText)),
+        tester.element(find.text('A document')),
       ).scale(1);
       expect(scale(), 1.0);
       await tester.tap(find.byTooltip('Larger text (Ctrl +)'));
@@ -198,15 +199,21 @@ void main() {
       await ctrl(tester, LogicalKeyboardKey.keyF);
       await typeInFind(tester, 'needle');
       expect(find.text('1 of 2'), findsOneWidget);
-      final scroll = tester.widget<SingleChildScrollView>(
-        find.byType(SingleChildScrollView).first,
-      );
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      final scroll = tester.widget<ListView>(find.byType(ListView));
       final first = scroll.controller!.offset;
       expect(first, greaterThan(1000));
+      expect(find.textContaining('The needle is here.'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pumpAndSettle();
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
       expect(find.text('2 of 2'), findsOneWidget);
       expect(scroll.controller!.offset, greaterThan(first));
+      expect(find.textContaining('And a needle again.'), findsOneWidget);
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(find.byIcon(Icons.keyboard_arrow_down), findsNothing);
@@ -273,6 +280,147 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await tester.pumpAndSettle();
       expect(FocusManager.instance.primaryFocus, focusBefore);
+    });
+  });
+
+  group('long documents', () {
+    final pieces = find.descendant(
+      of: find.byType(ListView),
+      matching: find.byType(RichText),
+    );
+
+    test('are cut at line ends, and the pieces joined are the text', () {
+      final many = [for (var i = 0; i < 100; i++) 'line $i'].join('\n');
+      for (final text in [
+        '',
+        'one',
+        'a\n\nb',
+        '\n\na\n \n\nb\n',
+        'a\nb\nc\n\n',
+        ' \n \nx',
+        many,
+      ]) {
+        expect(readerBlocks(text).join('\n'), text);
+      }
+      expect(readerBlocks('a\nb\n\nc\n\n\nd'), ['a\nb\n', 'c\n\n', 'd']);
+      expect(readerBlocks(many).length, 3);
+    });
+
+    testWidgets('only what is near the window is laid out', (tester) async {
+      final body = [
+        for (var i = 0; i < 5000; i++) 'Paragraph $i of the document.',
+      ].join('\n\n');
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: TextView(content: body)),
+        ),
+      );
+      expect(tester.widgetList(pieces).length, lessThan(60));
+      expect(find.text('Paragraph 0 of the document.\n'), findsOneWidget);
+    });
+
+    testWidgets('take the room they took as one text', (tester) async {
+      const body =
+          'A title\n\nA paragraph that is long enough to need several lines '
+          'on a narrow page, so it wraps.\nAnd its second line.\n\n\n'
+          'After two empty lines.\n \nThe end.\n';
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(width: 300, child: TextView(content: body)),
+            ),
+          ),
+        ),
+      );
+      expect(tester.widgetList(pieces).length, 4);
+      final style = tester.widget<RichText>(pieces.first).text.style;
+      final whole = TextPainter(
+        text: TextSpan(text: body, style: style),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: 300 - 32);
+      final list = tester.getRect(find.byType(ListView));
+      final first = tester.getRect(pieces.first);
+      final last = tester.getRect(pieces.last);
+      expect(first.top, list.top + 16);
+      expect(last.bottom - first.top, moreOrLessEquals(whole.height));
+      whole.dispose();
+    });
+
+    testWidgets('are copied with their line ends', (tester) async {
+      const body = 'First paragraph.\nIts second line.\n\nSecond.\n\n\nThird.';
+      String? copied;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied = (call.arguments as Map)['text'] as String?;
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: TextView(content: body)),
+        ),
+      );
+      await tester.tap(find.textContaining('Second.'));
+      await tester.pump();
+      await ctrl(tester, LogicalKeyboardKey.keyA);
+      await ctrl(tester, LogicalKeyboardKey.keyC);
+      expect(copied, body);
+    });
+
+    testWidgets('Find gets there after a click in the text', (tester) async {
+      final body = [
+        for (var i = 0; i < 600; i++) 'Paragraph $i of the document.',
+        'The needle is here.',
+        for (var i = 0; i < 600; i++) 'More text, paragraph $i.',
+      ].join('\n\n');
+      await open(tester, PageClient(text: body), 'gopher://example.org/0/doc');
+      // The line clicked is kept by the list when it goes out of sight.
+      await tester.tap(find.textContaining('Paragraph 2 of'));
+      await tester.pumpAndSettle();
+      await ctrl(tester, LogicalKeyboardKey.keyF);
+      await typeInFind(tester, 'needle');
+      for (var i = 0; i < 60; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(find.text('1 of 1'), findsOneWidget);
+      expect(find.textContaining('The needle is here.'), findsOneWidget);
+    });
+
+    testWidgets('unwrapped, Find goes across to a match far to the right', (
+      tester,
+    ) async {
+      final body =
+          '${'A line of text.\n' * 300}${'word ' * 400}needle\n'
+          '${'A line of text.\n' * 300}';
+      await open(tester, PageClient(text: body), 'gopher://example.org/0/doc');
+      await tester.tap(find.byTooltip('Disable word wrap'));
+      await tester.pumpAndSettle();
+      await ctrl(tester, LogicalKeyboardKey.keyF);
+      await typeInFind(tester, 'needle');
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(tester.takeException(), isNull);
+      final across = tester.widget<SingleChildScrollView>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is SingleChildScrollView &&
+              widget.scrollDirection == Axis.horizontal,
+        ),
+      );
+      expect(across.controller!.offset, greaterThan(1000));
+      final down = tester.widget<ListView>(find.byType(ListView));
+      expect(down.controller!.offset, greaterThan(1000));
     });
   });
 

@@ -87,7 +87,7 @@ void main() {
         home: Scaffold(body: TextView(content: 'Short document')),
       ),
     );
-    expect(tester.getTopLeft(find.byType(SelectableText)).dx, 16);
+    expect(tester.getTopLeft(find.text('Short document')).dx, 16);
   });
   testWidgets('word wrap switches to horizontally scrollable text', (
     tester,
