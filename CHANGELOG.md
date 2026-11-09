@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.2+11 - 2026-11-09
+
+- A long text document opens at once and takes little memory, because the reader lays out only the text near the window. On a 2011 laptop with 4 GB a document of 5 MB is readable in under half a second with the app at about 230 MiB, where it took 6 seconds and 1.7 GB.
+- Find on a long document no longer takes that much memory again. A match near where you are reading shows in a fraction of a second. A match far away takes longer the farther it is, about 13 seconds to the end of 5 MB on that laptop, with the page seen moving there, and it stops when you close Find or scroll.
+- After a click on a line, Find went to the end of the page. It now goes to the match, on documents, menus and the chat.
+- What you copy from a document is the text as the document has it, with its line ends. Select all and then Copy takes the whole document.
+- A line longer than 8000 characters is shown as several lines, also with word wrap off.
+
 ## 1.6.1+10 - 2026-11-09
 
 - While this computer works on a search, the app shows a still hourglass and one line of text, not a turning circle. The turning circle took about half a processor core away from the search. On a 2011 laptop with two cores a search of the Knowledge Packs is now readable about 2.5 seconds sooner, in about 3.2 seconds where it took 5.7. Waiting for another server looks as before.
