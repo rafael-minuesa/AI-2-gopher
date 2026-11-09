@@ -9,6 +9,7 @@ import 'package:ai_2_gopher/services/find_state.dart';
 import 'package:ai_2_gopher/services/gopher_client.dart';
 import 'package:ai_2_gopher/widgets/menu_view.dart';
 import 'package:ai_2_gopher/widgets/text_view.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -376,6 +377,51 @@ void main() {
       await ctrl(tester, LogicalKeyboardKey.keyC);
       expect(copied, body);
     });
+
+    testWidgets(
+      'Select all and copy takes the whole document',
+      (tester) async {
+        final body = [
+          for (var i = 0; i < 5000; i++) 'Paragraph $i of the document.',
+        ].join('\n\n');
+        String? copied;
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copied = (call.arguments as Map)['text'] as String?;
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: TextView(content: body)),
+          ),
+        );
+        await tester.tap(find.textContaining('Paragraph 2 of'));
+        await tester.pump();
+        await ctrl(tester, LogicalKeyboardKey.keyA);
+        await ctrl(tester, LogicalKeyboardKey.keyC);
+        expect(copied, body);
+        // A click ends it: the document is no longer what is copied.
+        copied = null;
+        await tester.tap(
+          find.textContaining('Paragraph 3 of'),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await ctrl(tester, LogicalKeyboardKey.keyC);
+        expect(copied, isNot(body));
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.linux),
+    );
 
     testWidgets('Find gets there after a click in the text', (tester) async {
       final body = [

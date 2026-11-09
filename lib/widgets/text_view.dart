@@ -73,8 +73,71 @@ class _TextViewState extends State<TextView> {
   double _line = 0;
   List<Object?> _lineFor = const [];
 
+  /// Select all was the last thing done to the selection. Only the pieces
+  /// near the window can hold a selection, so copying then takes the text
+  /// from the document itself.
+  bool _all = false;
+  bool _selectingAll = false;
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_onKey);
+  }
+
+  bool _onKey(KeyEvent event) {
+    if (event is! KeyDownEvent) return false;
+    if (!HardwareKeyboard.instance.isControlPressed) return false;
+    final here =
+        FocusManager.instance.primaryFocus?.context
+            ?.findAncestorStateOfType<_TextViewState>() ==
+        this;
+    if (!here) return false;
+    if (event.logicalKey == LogicalKeyboardKey.keyA) {
+      // The key goes on to the selection, which says it changed.
+      _all = true;
+      _selectingAll = true;
+      Future(() => _selectingAll = false);
+    } else if (event.logicalKey == LogicalKeyboardKey.keyC && _all) {
+      // The selection copies what its pieces hold. This comes after it.
+      final content = widget.content;
+      Future(() => Clipboard.setData(ClipboardData(text: content)));
+    }
+    return false;
+  }
+
+  void _selectionChanged(SelectedContent? content) {
+    if (!_selectingAll) _all = false;
+  }
+
+  Widget _menu(BuildContext context, SelectableRegionState region) {
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: region.contextMenuAnchors,
+      buttonItems: [
+        for (final item in region.contextMenuButtonItems)
+          if (item.type == ContextMenuButtonType.selectAll)
+            item.copyWith(
+              onPressed: () {
+                item.onPressed?.call();
+                _all = true;
+              },
+            )
+          else if (item.type == ContextMenuButtonType.copy && _all)
+            item.copyWith(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: widget.content));
+                region.hideToolbar();
+              },
+            )
+          else
+            item,
+      ],
+    );
+  }
+
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_onKey);
     _down.dispose();
     _across.dispose();
     super.dispose();
@@ -269,6 +332,8 @@ class _TextViewState extends State<TextView> {
           ),
           Expanded(
             child: SelectionArea(
+              contextMenuBuilder: _menu,
+              onSelectionChanged: _selectionChanged,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final list = ListView.builder(
