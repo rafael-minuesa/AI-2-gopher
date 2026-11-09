@@ -68,6 +68,7 @@
   "requestCancelled": "Anfrage abgebrochen",
   "responseTooLarge": "Die Antwort überschreitet die Größenbeschränkung",
   "answerStopped": "Die Antwort brach ab, bevor sie fertig war",
+  "workingOnThisComputer": "Dieser Computer arbeitet daran. Bitte warten.",
   "connectionFailed": "Verbindung fehlgeschlagen: {detail}",
   "connectionTimedOut": "Zeitüberschreitung der Verbindung",
   "couldNotReadResponse": "Die Antwort konnte nicht gelesen werden: {detail}",

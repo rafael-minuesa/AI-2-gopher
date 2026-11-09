@@ -247,6 +247,50 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('waiting for this computer shows nothing that moves', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState(client: StreamingClient());
+    addTearDown(state.dispose);
+    await state.init();
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: state,
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+    unawaited(
+      state.navigate('gopher://127.0.0.1:7071/7/knowledge/search%09burn'),
+    );
+    await tester.pump();
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(
+      find.text('This computer is working on it. Please wait.'),
+      findsOneWidget,
+    );
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(tester.hasRunningAnimations, isFalse);
+  });
+
+  testWidgets('waiting for another server still shows the spinner', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final state = AppState(client: StreamingClient());
+    addTearDown(state.dispose);
+    await state.init();
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: state,
+        child: const MaterialApp(home: HomeScreen()),
+      ),
+    );
+    unawaited(state.navigate('gopher://gopher.example/7/search%09burn'));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
   testWidgets('a long answer stays in sight and its end is left showing', (
     tester,
   ) async {

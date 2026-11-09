@@ -109,6 +109,7 @@
   "requestCancelled": "Request cancelled",
   "responseTooLarge": "Response exceeds the size limit",
   "answerStopped": "The answer stopped before it finished",
+  "workingOnThisComputer": "This computer is working on it. Please wait.",
   "connectionFailed": "Connection failed: {detail}",
   "@connectionFailed": {
     "placeholders": {

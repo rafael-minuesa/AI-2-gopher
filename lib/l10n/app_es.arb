@@ -68,6 +68,7 @@
   "requestCancelled": "Solicitud cancelada",
   "responseTooLarge": "La respuesta supera el tamaño máximo",
   "answerStopped": "La respuesta se ha cortado antes de terminar",
+  "workingOnThisComputer": "Este ordenador está trabajando en ello. Espera, por favor.",
   "connectionFailed": "Error de conexión: {detail}",
   "connectionTimedOut": "Se ha agotado el tiempo de conexión",
   "couldNotReadResponse": "No se ha podido leer la respuesta: {detail}",

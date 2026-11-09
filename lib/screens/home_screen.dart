@@ -343,6 +343,31 @@ class _ReadingSize extends StatelessWidget {
   }
 }
 
+/// What a question to this computer shows until its first line: nothing that
+/// moves.
+class _StillWait extends StatelessWidget {
+  const _StillWait();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.hourglass_empty,
+            size: 40,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(height: 12),
+          Text(t.workingOnThisComputer, style: theme.textTheme.bodyLarge),
+        ],
+      ),
+    );
+  }
+}
+
 class BrowserTab extends StatelessWidget {
   const BrowserTab({super.key});
 
@@ -380,10 +405,16 @@ class BrowserTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                        // No animation once lines are showing: on an old
-                        // computer it would take processor time from the model.
+                        // No animation while this computer works on the
+                        // answer: on an old computer it takes processor time
+                        // from the model. Measured on a 2-core machine, a
+                        // spinner made a 3 second search take nearly 6.
                         child: partial == null
-                            ? const Center(child: CircularProgressIndicator())
+                            ? state.isAskingLocally
+                                  ? const _StillWait()
+                                  : const Center(
+                                      child: CircularProgressIndicator(),
+                                    )
                             : MenuView(
                                 key: ValueKey(state.pageId),
                                 items: partial,
