@@ -66,7 +66,11 @@ class FindMatch {
   final int start;
   final int end;
 
-  const FindMatch(this.line, this.start, this.end);
+  /// Set on the rest of a match that began in the line before, where a long
+  /// line is shown in several pieces. It is marked, and not counted.
+  final FindMatch? head;
+
+  const FindMatch(this.line, this.start, this.end, {this.head});
 }
 
 /// Find on this page. The page's view says what its lines are, in [report],
@@ -84,6 +88,7 @@ class FindState extends ChangeNotifier {
   bool _open = false;
   String _query = '';
   List<String> _lines = const [];
+  List<bool>? _continued;
   int _searched = 0;
   int? _page;
   List<FindMatch> _matches = const [];
@@ -96,8 +101,18 @@ class FindState extends ChangeNotifier {
   bool get isOpen => _open;
   String get query => _query;
 
-  /// The page as its view shows it, line by line.
-  List<String> get pageLines => _lines;
+  /// The text of the page, as for a file.
+  String get pageText {
+    final continued = _continued;
+    if (continued == null) return _lines.join('\n');
+    final out = StringBuffer();
+    for (var i = 0; i < _lines.length; i++) {
+      if (i > 0 && !continued[i]) out.write('\n');
+      out.write(_lines[i]);
+    }
+    return out.toString();
+  }
+
   int get total => _matches.length;
   bool get reachedLimit => _matches.length >= limit;
 
@@ -153,14 +168,20 @@ class FindState extends ChangeNotifier {
     if (id == _page) return;
     _page = id;
     _lines = const [];
+    _continued = null;
     _clear();
     _notifyAfterBuild();
   }
 
   /// From a view's build, with the lines it is showing. A chat answer calls
   /// this with each word, so it does nothing unless they changed.
-  void report(List<String> lines) {
+  ///
+  /// Where a long line is shown in several pieces, [continued] says which of
+  /// them go on from the one before with no line end between. A match may
+  /// then begin in one piece and end in the next.
+  void report(List<String> lines, {List<bool>? continued}) {
     _lines = lines;
+    _continued = continued;
     if (_query.isEmpty) return;
     final searched = Object.hashAll(lines);
     if (searched == _searched) return;
@@ -184,19 +205,58 @@ class FindState extends ChangeNotifier {
     final byLine = <int, List<FindMatch>>{};
     if (_query.isNotEmpty) {
       final wanted = _folded(_query);
+      final continued = _continued;
+      var line = 0;
       outer:
-      for (var line = 0; line < _lines.length; line++) {
-        final text = _folded(_lines[line]);
+      while (line < _lines.length) {
+        // The pieces of one long line are searched as the line they are.
+        var next = line + 1;
+        while (continued != null && next < _lines.length && continued[next]) {
+          next++;
+        }
+        final text = next == line + 1
+            ? _folded(_lines[line])
+            : _folded(_lines.sublist(line, next).join());
+        var piece = line;
+        var pieceStart = 0;
         var from = 0;
         while (true) {
           final start = text.indexOf(wanted, from);
           if (start < 0) break;
-          final match = FindMatch(line, start, start + wanted.length);
+          final end = start + wanted.length;
+          while (start >= pieceStart + _lines[piece].length &&
+              piece < next - 1) {
+            pieceStart += _lines[piece].length;
+            piece++;
+          }
+          final pieceEnd = pieceStart + _lines[piece].length;
+          final match = FindMatch(
+            piece,
+            start - pieceStart,
+            (end < pieceEnd ? end : pieceEnd) - pieceStart,
+          );
           found.add(match);
-          (byLine[line] ??= []).add(match);
+          (byLine[piece] ??= []).add(match);
+          // What is left of it lies in the pieces after.
+          var rest = piece;
+          var restStart = pieceEnd;
+          while (end > restStart && rest < next - 1) {
+            rest++;
+            final restEnd = restStart + _lines[rest].length;
+            (byLine[rest] ??= []).add(
+              FindMatch(
+                rest,
+                0,
+                (end < restEnd ? end : restEnd) - restStart,
+                head: match,
+              ),
+            );
+            restStart = restEnd;
+          }
           if (found.length >= limit) break outer;
-          from = match.end;
+          from = end;
         }
+        line = next;
       }
     }
     _matches = found;
@@ -248,7 +308,9 @@ TextSpan? foundSpan(FindState? find, String text, int line, TextStyle? style) {
     parts.add(
       TextSpan(
         text: text.substring(match.start, match.end),
-        style: identical(match, current)
+        style:
+            current != null &&
+                (identical(match, current) || identical(match.head, current))
             ? const TextStyle(
                 backgroundColor: _currentFound,
                 color: _onCurrentFound,

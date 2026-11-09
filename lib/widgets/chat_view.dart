@@ -38,6 +38,7 @@ class _ChatViewState extends State<ChatView> {
 
   @override
   void dispose() {
+    _finder.stop();
     _scroll.dispose();
     _box.dispose();
     _focus.dispose();
