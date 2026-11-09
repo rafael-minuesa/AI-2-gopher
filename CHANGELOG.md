@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.1+10 - 2026-11-09
+
+- While this computer works on a search, the app shows a still hourglass and one line of text, not a turning circle. The turning circle took about half a processor core away from the search. On a 2011 laptop with two cores a search of the Knowledge Packs is now readable about 2.5 seconds sooner, in about 3.2 seconds where it took 5.7. Waiting for another server looks as before.
+
 ## 1.6.0+9 - 2026-11-08
 
 - The AI-2 chat page shows Search Knowledge Packs, offered by the AI-2 server, as a button with a book icon.
