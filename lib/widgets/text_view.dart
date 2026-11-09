@@ -14,9 +14,12 @@ class ReaderPieces {
   /// line. Every other piece but the first comes after a line end.
   final List<bool> continued;
 
-  const ReaderPieces(this.texts, this.continued);
+  /// Where in the document each piece begins.
+  final List<int> starts;
 
-  static const none = ReaderPieces([''], [false]);
+  const ReaderPieces(this.texts, this.continued, this.starts);
+
+  static const none = ReaderPieces([''], [false], [0]);
 
   /// The document again.
   String join() {
@@ -37,6 +40,7 @@ class ReaderPieces {
 ReaderPieces readerPieces(String text, {int lines = 40, int size = 8000}) {
   final texts = <String>[];
   final continued = <bool>[];
+  final starts = <int>[];
   var start = 0;
   var count = 0;
   var afterBlank = false;
@@ -46,6 +50,7 @@ ReaderPieces readerPieces(String text, {int lines = 40, int size = 8000}) {
   void close(int end) {
     texts.add(text.substring(start, end));
     continued.add(goesOn);
+    starts.add(start);
     goesOn = false;
     count = 0;
   }
@@ -77,7 +82,7 @@ ReaderPieces readerPieces(String text, {int lines = 40, int size = 8000}) {
     at = end + 1;
   }
   close(text.length);
-  return ReaderPieces(texts, continued);
+  return ReaderPieces(texts, continued, starts);
 }
 
 /// Where to cut a line that is too long: after the last space in the second
@@ -137,8 +142,8 @@ class _TextViewState extends State<TextView> {
   List<Object?> _lineFor = const [];
 
   /// Select all was the last thing done to the selection. Only the pieces
-  /// near the window can hold a selection, so copying then takes the text
-  /// from the document itself.
+  /// near the window can hold a selection, so everything is then taken to be
+  /// selected, built or not.
   bool _all = false;
   bool _selectingAll = false;
 
@@ -161,16 +166,72 @@ class _TextViewState extends State<TextView> {
       _all = true;
       _selectingAll = true;
       Future(() => _selectingAll = false);
-    } else if (event.logicalKey == LogicalKeyboardKey.keyC && _all) {
-      // The selection copies what its pieces hold. This comes after it.
-      final content = widget.content;
-      Future(() => Clipboard.setData(ClipboardData(text: content)));
+    } else if (event.logicalKey == LogicalKeyboardKey.keyC) {
+      // The key goes on to the selection, which copies what its pieces
+      // hold. This comes after it.
+      final text = _selected();
+      if (text != null) {
+        Future(() => Clipboard.setData(ClipboardData(text: text)));
+      }
     }
     return false;
   }
 
   void _selectionChanged(SelectedContent? content) {
     if (!_selectingAll) _all = false;
+  }
+
+  RenderParagraph? _paragraph(BuildContext piece) {
+    RenderParagraph? paragraph;
+    void look(RenderObject object) {
+      if (paragraph != null) return;
+      if (object is RenderParagraph) {
+        paragraph = object;
+      } else {
+        object.visitChildren(look);
+      }
+    }
+
+    piece.findRenderObject()?.visitChildren(look);
+    return paragraph;
+  }
+
+  /// A piece that comes after a line end is shown starting with that line
+  /// end, so a place in it is one further on than in the piece's own text.
+  int _shift(int index) => index == 0 || _pieces.continued[index] ? 0 : 1;
+
+  /// What is selected, taken from the document: from where the selection
+  /// begins in its first piece to where it ends in its last. What the pieces
+  /// hand over themselves has no line end where the selection runs off the
+  /// end of a piece, so paragraphs would come out with no line between them.
+  /// Null when nothing is selected.
+  String? _selected() {
+    if (_all) return widget.content;
+    int? from;
+    int? to;
+    for (final (index, piece) in _finder.lines) {
+      if (index >= _pieces.starts.length) continue;
+      final paragraph = _paragraph(piece);
+      if (paragraph == null) continue;
+      final start = _pieces.starts[index] - _shift(index);
+      // Flutter marks this for its tests only, and offers the same through
+      // a listener widget around each piece, which is one more layer on every
+      // piece to read two numbers.
+      // ignore: invalid_use_of_visible_for_testing_member
+      for (final selection in paragraph.selections) {
+        if (selection.isCollapsed) continue;
+        final first = start + selection.start;
+        final last = start + selection.end;
+        if (from == null || first < from) from = first;
+        if (to == null || last > to) to = last;
+      }
+    }
+    if (from == null || to == null) return null;
+    final content = widget.content;
+    return content.substring(
+      from.clamp(0, content.length),
+      to.clamp(0, content.length),
+    );
   }
 
   Widget _menu(BuildContext context, SelectableRegionState region) {
@@ -185,11 +246,12 @@ class _TextViewState extends State<TextView> {
                 _all = true;
               },
             )
-          else if (item.type == ContextMenuButtonType.copy && _all)
+          else if (item.type == ContextMenuButtonType.copy)
             item.copyWith(
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: widget.content));
-                region.hideToolbar();
+                final text = _selected();
+                item.onPressed?.call();
+                if (text != null) Clipboard.setData(ClipboardData(text: text));
               },
             )
           else
@@ -272,23 +334,9 @@ class _TextViewState extends State<TextView> {
   /// The piece is built and laid out, so where the match is in it is known
   /// without laying anything out again.
   void _show(BuildContext piece, FindMatch match) {
-    RenderParagraph? paragraph;
-    void look(RenderObject object) {
-      if (paragraph != null) return;
-      if (object is RenderParagraph) {
-        paragraph = object;
-      } else {
-        object.visitChildren(look);
-      }
-    }
-
-    final root = piece.findRenderObject();
-    if (root == null || !_down.hasClients) return;
-    look(root);
-    final text = paragraph;
-    if (text == null) return;
-    // A piece that comes after a line end starts with that line end.
-    final shift = match.line == 0 || _pieces.continued[match.line] ? 0 : 1;
+    final text = _paragraph(piece);
+    if (text == null || !_down.hasClients) return;
+    final shift = _shift(match.line);
     final boxes = text.getBoxesForSelection(
       TextSelection(
         baseOffset: match.start + shift,

@@ -178,6 +178,15 @@ class ListFinder {
   Widget keep(int line, Widget child) =>
       KeyedSubtree(key: _keys[line] ??= GlobalKey(), child: child);
 
+  /// The lines there are now, by number: those near the window, and any the
+  /// list keeps because part of a selection is in them.
+  Iterable<(int, BuildContext)> get lines sync* {
+    for (final entry in _keys.entries) {
+      final context = entry.value.currentContext;
+      if (context != null) yield (entry.key, context);
+    }
+  }
+
   /// Call from build: goes to the current match when Find has moved to one.
   /// Going to a match far away takes many frames, and stops here when there
   /// is no longer a match to go to: Find was closed, or finds nothing.

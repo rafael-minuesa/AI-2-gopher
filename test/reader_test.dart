@@ -453,6 +453,72 @@ void main() {
     });
 
     testWidgets(
+      'a selection dragged over paragraphs keeps the lines between',
+      (tester) async {
+        final body = [
+          for (var i = 0; i < 400; i++) 'Paragraph $i of the document.',
+        ].join('\n\n');
+        final copies = <String?>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'Clipboard.setData') {
+              copies.add((call.arguments as Map)['text'] as String?);
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: TextView(content: body)),
+          ),
+        );
+        final scroll = tester
+            .widget<ListView>(find.byType(ListView))
+            .controller!;
+        final from = tester.getTopLeft(find.textContaining('Paragraph 2 of'));
+        final drag = await tester.startGesture(
+          // Its first line is the empty one before it.
+          from + const Offset(1, 20),
+          kind: PointerDeviceKind.mouse,
+        );
+        await tester.pump();
+        await drag.moveTo(
+          tester.getCenter(find.textContaining('Paragraph 9 of')),
+        );
+        await tester.pump();
+        // On, over several screens, with the button held.
+        for (var i = 0; i < 6; i++) {
+          scroll.jumpTo(scroll.offset + 500);
+          await tester.pump();
+          await drag.moveBy(Offset(0, i.isEven ? 1 : -1));
+          await tester.pump();
+        }
+        final last = find.textContaining('Paragraph').last;
+        await drag.moveTo(tester.getCenter(last));
+        await tester.pump();
+        await drag.up();
+        await tester.pumpAndSettle();
+        await ctrl(tester, LogicalKeyboardKey.keyC);
+        final copied = copies.last!;
+        expect(
+          copied,
+          startsWith('Paragraph 2 of the document.\n\nParagraph 3'),
+        );
+        expect(body.contains(copied), isTrue);
+        // It went on well past the first screen.
+        expect(copied.split('\n\n').length, greaterThan(60));
+      },
+      variant: TargetPlatformVariant.only(TargetPlatform.linux),
+    );
+
+    testWidgets(
       'Select all and copy takes the whole document',
       (tester) async {
         final body = [
