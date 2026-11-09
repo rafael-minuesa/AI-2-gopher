@@ -2,7 +2,7 @@
 
 A native Gopher browser with a consistent text interface, typed menus and documents, search, bookmarks, and browsing history.
 
-Current native app version: **1.6.1+10**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
+Current native app version: **1.6.2+11**. See [CHANGELOG.md](CHANGELOG.md) for release changes.
 
 **Gopher Reader extension 1.1.1** converts a loaded web page into a local text-and-links view in one click. With the Linux app installed, **Open in Gopher app** saves that copy and delivers it through actual Gopher. See [extension installation and usage](extension/README.md).
 
