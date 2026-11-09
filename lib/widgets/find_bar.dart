@@ -179,13 +179,22 @@ class ListFinder {
       KeyedSubtree(key: _keys[line] ??= GlobalKey(), child: child);
 
   /// Call from build: goes to the current match when Find has moved to one.
+  /// Going to a match far away takes many frames, and stops here when there
+  /// is no longer a match to go to: Find was closed, or finds nothing.
   void follow(FindState? find) {
-    if (find == null || find.revision == _seen) return;
+    final target = find?.current;
+    if (find == null || target == null) {
+      stop();
+      if (find != null) _seen = find.revision;
+      return;
+    }
+    if (find.revision == _seen) return;
     _seen = find.revision;
-    final target = find.current;
-    if (target == null) return;
     _go(target);
   }
+
+  /// Ends the way to a match, if one is under way.
+  void stop() => _trip++;
 
   void _bringIntoSight(FindMatch match) {
     final context = _keys[match.line]?.currentContext;
@@ -218,8 +227,20 @@ class ListFinder {
     // be worked out. Narrow it down by which lines the list has built.
     var low = 0.0;
     double? high;
+    double? left;
     for (var tries = 0; tries < 2000; tries++) {
       if (trip != _trip || !scroll.hasClients) return;
+      // Somewhere else than where the last step left it: the person scrolled,
+      // and keeps the page. The list itself only ever pulls an offset back
+      // inside its ends.
+      if (left != null) {
+        final position = scroll.position;
+        final kept = left.clamp(
+          position.minScrollExtent,
+          position.maxScrollExtent,
+        );
+        if ((scroll.offset - kept).abs() > 1) return;
+      }
       _keys.removeWhere((_, key) => key.currentContext == null);
       final built = _keys.entries
           .where((entry) => _inList(entry.value.currentContext))
@@ -242,7 +263,8 @@ class ListFinder {
       // document in memory at once, so it goes there in steps.
       final step = 30 * scroll.position.viewportDimension;
       final wanted = (low + top) / 2 - scroll.offset;
-      scroll.jumpTo(scroll.offset + wanted.clamp(-step, step));
+      left = scroll.offset + wanted.clamp(-step, step);
+      scroll.jumpTo(left);
       await WidgetsBinding.instance.endOfFrame;
     }
   }

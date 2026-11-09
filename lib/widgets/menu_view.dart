@@ -40,6 +40,7 @@ class _MenuViewState extends State<MenuView> {
 
   @override
   void dispose() {
+    _finder.stop();
     _scroll.dispose();
     super.dispose();
   }

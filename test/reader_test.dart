@@ -301,10 +301,76 @@ void main() {
         ' \n \nx',
         many,
       ]) {
-        expect(readerBlocks(text).join('\n'), text);
+        final pieces = readerPieces(text);
+        expect(pieces.join(), text);
+        expect(pieces.continued, everyElement(isFalse));
       }
-      expect(readerBlocks('a\nb\n\nc\n\n\nd'), ['a\nb\n', 'c\n\n', 'd']);
-      expect(readerBlocks(many).length, 3);
+      expect(readerPieces('a\nb\n\nc\n\n\nd').texts, ['a\nb\n', 'c\n\n', 'd']);
+      expect(readerPieces(many).texts.length, 3);
+    });
+
+    test('a line too long for one piece is cut inside, after a space', () {
+      final words = 'word ' * 200000;
+      final unbroken = 'x' * 20000;
+      final faces = '\u{1F600}' * 9000;
+      final marks = 'e\u0301' * 9000;
+      final mixed = 'A title\n\n${'long ' * 5000}\nits next line\n\nThe end.';
+      final lines = [for (var i = 0; i < 39; i++) 'y' * 500].join('\n');
+      for (final text in [words, unbroken, faces, marks, mixed, lines]) {
+        final pieces = readerPieces(text);
+        expect(pieces.join(), text);
+        for (final piece in pieces.texts) {
+          expect(piece.length, lessThanOrEqualTo(8000));
+        }
+        expect(pieces.continued.first, isFalse);
+      }
+      final cut = readerPieces(words);
+      expect(cut.texts.length, 125);
+      expect(cut.continued.skip(1), everyElement(isTrue));
+      expect(cut.texts, everyElement(endsWith(' ')));
+      // Never between the two halves of a character, or a letter and its mark.
+      for (final piece in readerPieces(faces).texts) {
+        expect(piece.length.isEven, isTrue);
+        expect(piece.runes.length * 2, piece.length);
+      }
+      for (final piece in readerPieces(marks).texts) {
+        expect(piece.startsWith('e'), isTrue);
+      }
+      final parts = readerPieces(mixed);
+      expect(parts.texts.first, 'A title\n');
+      expect(parts.texts.last, 'The end.');
+      expect(parts.continued.where((c) => c).length, 3);
+    });
+
+    test('Find sees a line through its pieces', () {
+      final state = FindState()
+        ..report(
+          ['First line', 'a long li', 'ne cut in thr', 'ee pieces', 'Last'],
+          continued: [false, false, true, true, false],
+        );
+      expect(
+        state.pageText,
+        'First line\na long line cut in three pieces\nLast',
+      );
+      state.setQuery('line');
+      expect(state.total, 2);
+      state.next();
+      expect(state.current!.line, 1);
+      expect((state.current!.start, state.current!.end), (7, 9));
+      expect(state.on(2).single.head, same(state.current));
+      expect((state.on(2).single.start, state.on(2).single.end), (0, 2));
+      state.setQuery('three');
+      expect(state.total, 1);
+      expect(state.current!.line, 2);
+      expect(state.on(3).single.end, 2);
+      state.setQuery('in thr');
+      expect(state.total, 1);
+      expect(state.on(3), isEmpty);
+      // A line end is still a line end.
+      state.setQuery('line a');
+      expect(state.total, 0);
+      state.setQuery('pieces last');
+      expect(state.total, 0);
     });
 
     testWidgets('only what is near the window is laid out', (tester) async {
@@ -349,13 +415,16 @@ void main() {
     });
 
     testWidgets('are copied with their line ends', (tester) async {
-      const body = 'First paragraph.\nIts second line.\n\nSecond.\n\n\nThird.';
-      String? copied;
+      // A line of 20,000 letters is three pieces, and the window is large
+      // enough to hold them all.
+      final body =
+          'First paragraph.\nIts second line.\n\n${'long ' * 4000}\n\n\nThird.';
+      final copies = <String?>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
         (call) async {
           if (call.method == 'Clipboard.setData') {
-            copied = (call.arguments as Map)['text'] as String?;
+            copies.add((call.arguments as Map)['text'] as String?);
           }
           return null;
         },
@@ -366,16 +435,21 @@ void main() {
           null,
         ),
       );
+      await tester.binding.setSurfaceSize(const Size(4000, 3000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
           home: Scaffold(body: TextView(content: body)),
         ),
       );
-      await tester.tap(find.textContaining('Second.'));
+      expect(tester.widgetList(pieces).length, 5);
+      await tester.tap(find.textContaining('Third.'));
       await tester.pump();
       await ctrl(tester, LogicalKeyboardKey.keyA);
       await ctrl(tester, LogicalKeyboardKey.keyC);
-      expect(copied, body);
+      // The first is what the selection itself holds, piece after piece.
+      expect(copies.first, body);
+      expect(copies.last, body);
     });
 
     testWidgets(
@@ -422,6 +496,78 @@ void main() {
       },
       variant: TargetPlatformVariant.only(TargetPlatform.linux),
     );
+
+    for (final how in ['Find is closed', 'nothing is found', 'one scrolls']) {
+      testWidgets('the way to a far match ends when $how', (tester) async {
+        final state = FindState();
+        addTearDown(state.dispose);
+        final body = [
+          for (var i = 0; i < 5000; i++) 'Paragraph $i has ordinary words.',
+          'needle',
+        ].join('\n\n');
+        await tester.pumpWidget(
+          ChangeNotifierProvider<FindState>.value(
+            value: state,
+            child: MaterialApp(
+              home: Scaffold(body: TextView(content: body)),
+            ),
+          ),
+        );
+        final scroll = tester
+            .widget<ListView>(find.byType(ListView))
+            .controller!;
+        state.open();
+        state.setQuery('needle');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 16));
+        expect(scroll.offset, greaterThan(0));
+        if (how == 'Find is closed') {
+          state.close();
+        } else if (how == 'nothing is found') {
+          state.setQuery('there is no such phrase in the document');
+        } else {
+          scroll.jumpTo(scroll.offset - 300);
+        }
+        await tester.pump(const Duration(milliseconds: 16));
+        final left = scroll.offset;
+        for (var frame = 0; frame < 12; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        expect(scroll.offset, left);
+        expect(find.textContaining('needle'), findsNothing);
+        // And asking again still gets there.
+        if (how == 'one scrolls') {
+          state.next();
+        } else {
+          state.setQuery('needle');
+        }
+        for (var frame = 0; frame < 200; frame++) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+        expect(find.textContaining('needle'), findsOneWidget);
+      });
+    }
+
+    testWidgets('Find goes to a match inside a long line', (tester) async {
+      final body = '${'word ' * 30000}needle ${'word ' * 30000}';
+      await open(tester, PageClient(text: body), 'gopher://example.org/0/doc');
+      await ctrl(tester, LogicalKeyboardKey.keyF);
+      await typeInFind(tester, 'needle');
+      for (var i = 0; i < 60; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(find.text('1 of 1'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      // It is in sight: the piece holding it is one of the few laid out.
+      expect(tester.widgetList(pieces).length, lessThan(8));
+      final marked = tester
+          .widgetList<RichText>(pieces)
+          .where((text) => text.text.toPlainText().contains('needle'));
+      expect(marked.length, 1);
+      await tester.tap(find.byTooltip('Disable word wrap'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('Find gets there after a click in the text', (tester) async {
       final body = [

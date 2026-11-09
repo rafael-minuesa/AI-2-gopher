@@ -51,10 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final messenger = ScaffoldMessenger.of(context);
     final message = await () async {
       try {
-        final path = await exportText(
-          _find.pageLines.join('\n'),
-          state.exportName,
-        );
+        final path = await exportText(_find.pageText, state.exportName);
         return t.exportedTo(path);
       } on FileSystemException catch (error) {
         return t.exportFailed(error.osError?.message ?? error.message);
